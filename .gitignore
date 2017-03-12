@@ -1,0 +1,14 @@
+*.[oa]
+*.d
+*.crf
+*.hex
+*~
+*.lst
+cscope*
+.*swp
+.depend
+a.out
+target
+target/*
+
+
