@@ -1,8 +1,8 @@
 #ifndef BEECOMINT_H
 #define BEECOMINT_H
 
-#define TRUE 		1;
-#define FALSE 		0;
+#define TRUE 		1
+#define FALSE 		0
 
 typedef char 	bool_t;
 
