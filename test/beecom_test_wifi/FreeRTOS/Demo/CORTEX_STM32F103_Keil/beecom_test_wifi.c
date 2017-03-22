@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #define BC_CENTER_SERV_PORT 	54321
 
@@ -22,9 +23,13 @@
 
 // TODO
 uint8_t INADDR_ANY[16];
+uint32_t StartReceiveFlag;
 
 sint8_t xxx;
 sint8_t msg[256];
+
+#define WIFI_BUF_SIZE 	1024
+uint8_t usart_wifi_buf[WIFI_BUF_SIZE];
 
 uint8_t SrvBuf[TASK_BUF_SIZE]; 
 
@@ -154,7 +159,7 @@ void USART2_IRQHandler(void)
 
 volatile void vUARTInterruptHandler( void )
 {
-	/*
+	
 	static uint32_t Index = 0;
 	uint16_t RxData=0;
 	
@@ -162,6 +167,7 @@ volatile void vUARTInterruptHandler( void )
 		return;
 	}
 	
+	/*
 	if(!IsMsgGotten()) {
 		// RxData = USART_ReceiveData(USART1);
 		USART1_RECEIVE(RxData);
@@ -173,6 +179,46 @@ volatile void vUARTInterruptHandler( void )
 		return;
 	}
 	*/
+	if(StartReceiveFlag) {
+		RxData = USART_RECEIVE(USART_WIFI, RxData);
+		usart_wifi_buf[Index++] = (uint8_t)RxData;
+		if(Index >= WIFI_BUF_SIZE - 1) {
+			StartReceiveFlag = 0;
+			usart_wifi_buf[WIFI_BUF_SIZE-1] = '\0';
+			Index = 0;
+			return;
+		}
+		if(Index > 2) {
+			if( usart_wifi_buf[Index-1] == 'K' && 
+				usart_wifi_buf[Index-2] == 'O'	) 
+			{
+					usart_wifi_buf[Index] = '\0';
+					StartReceiveFlag = 0;
+					Index = 0;
+					return;
+			}
+		}
+		if(Index > 5) {
+			if( usart_wifi_buf[Index-1] == 'R' && 
+				usart_wifi_buf[Index-2] == 'O' && 
+				usart_wifi_buf[Index-3] == 'R' && 
+				usart_wifi_buf[Index-4] == 'R' && 
+				usart_wifi_buf[Index-5] == 'E' 	) {
+					
+					usart_wifi_buf[Index] = '\0';
+					StartReceiveFlag = 0;
+					Index = 0;
+					return;
+				}
+		}
+		
+	} else
+	{
+		RxData = USART_RECEIVE(USART_WIFI, RxData);
+		return;
+	}
+	
+	
 	 
 	
 }
@@ -250,10 +296,21 @@ sint32_t BC_WifiInit(void)
 	uputs(USART_WIFI, msg);
 	vTaskDelay(delay_time_ms);
 	
+	memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
+	StartReceiveFlag = 1;
 	uputs(USART_WIFI, "AT+CIFSR=?");
 	// TODO:
-	// Get IP
-
+	while(StartReceiveFlag)
+		;
+	memset(INADDR_ANY, 0, 16);
+	for(i = 0; i < 16;i++) {
+		if('.' == usart_wifi_buf[i] || isdigit(usart_wifi_buf[i])) {
+			INADDR_ANY[i] = usart_wifi_buf[i]; 
+		}
+		break;
+	}
+	INADDR_ANY[i] = '\0';
+	
 	return 0;
 	
 }
