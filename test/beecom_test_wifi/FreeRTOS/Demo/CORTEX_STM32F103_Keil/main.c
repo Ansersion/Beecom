@@ -243,7 +243,9 @@ int main( void )
 	
 	LedInit();
 	Usart1Init(9600);
+	// Wifi initialization
 	// Usart2Init(9600);
+	// BC_WifiInit();
 	
 	xTaskCreate( vLedTask, "LED_TEST", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+4, NULL );
 	/* The suicide tasks must be created last as they need to know how many

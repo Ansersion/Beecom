@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #define BC_CENTER_SERV_PORT 	54321
 
@@ -21,22 +22,30 @@
 #define BC_MAX_SOCKET_NUM 		3
 #define ASSERT_SOCK_VALID(s) ((s) >= 0 && (s) < BC_MAX_SOCKET_NUM)
 
+#define NUM_ASCII_SIZE 	6
+uint8_t IPDNum[NUM_ASCII_SIZE];
+
 // TODO
 uint8_t INADDR_ANY[16];
-uint32_t StartReceiveFlag;
+uint32_t StartReceiveFlag = 0;
+uint32_t StartAcceptFlag = 0;
+BC_Sockaddr * k_cliaddr = NULL;
+uint32_t * k_addrlen = NULL;
 
 sint8_t xxx;
 sint8_t msg[256];
 
-#define WIFI_BUF_SIZE 	1024
+#define WIFI_BUF_SIZE 	4096
 uint8_t usart_wifi_buf[WIFI_BUF_SIZE];
 
 uint8_t SrvBuf[TASK_BUF_SIZE]; 
 
 BC_SocketData sock_data[BC_MAX_SOCKET_NUM];
-uint8_t SockBuf_0[1024];
-uint8_t SockBuf_1[1024];
-uint8_t SockBuf_2[1024];
+
+#define SOCKET_BUF_SIZE 1024
+uint8_t SockBuf_0[SOCKET_BUF_SIZE];
+uint8_t SockBuf_1[SOCKET_BUF_SIZE];
+uint8_t SockBuf_2[SOCKET_BUF_SIZE];
 
 
 void LedInit(void)
@@ -161,33 +170,156 @@ volatile void vUARTInterruptHandler( void )
 {
 	
 	static uint32_t Index = 0;
-	uint16_t RxData=0;
+	static uint16_t u16PackSize = 0;
+	static uint32_t IPDState = IPD_STATE_START_PROBE;
+	static uint16_t num = 0;
+	static uint8_t i = 0;
+	static uint16_t FirstComma = 0, SecondComma = 0, Colon = 0;
+	static uint16_t RxData=0;
+	static uint16_t u16SocketID = 0;
+	uint32_t u32Tmp = 0;
 	
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) == RESET) {
 		return;
 	}
 	
-	/*
-	if(!IsMsgGotten()) {
-		// RxData = USART_ReceiveData(USART1);
-		USART1_RECEIVE(RxData);
-		RecvBuffer[Index++] = (uint8_t)RxData;// serial_1();
-	}
-	else {
-		// RxData = USART_ReceiveData(USART1); // ignore the data
-		RxData = USART1_RECEIVE(RxData);
-		return;
-	}
-	*/
 	if(StartReceiveFlag) {
 		RxData = USART_RECEIVE(USART_WIFI, RxData);
 		usart_wifi_buf[Index++] = (uint8_t)RxData;
 		if(Index >= WIFI_BUF_SIZE - 1) {
 			StartReceiveFlag = 0;
+			IPDState = IPD_STATE_START_PROBE;
 			usart_wifi_buf[WIFI_BUF_SIZE-1] = '\0';
 			Index = 0;
 			return;
 		}
+		// OTHER COMMAND
+		if(StartAcceptFlag) {
+			if(Index >= sizeof("0,CONNECT") - 1) {
+				if(strncmp(usart_wifi_buf, "0,CONNECT", sizeof("0,CONNECT")-1) == 0) {
+					StartAcceptFlag = 0;
+				}
+			}
+		}
+		
+		// IDP PACKET
+		switch(IPDState) {
+			case IPD_STATE_START_PROBE:
+				if('+' == usart_wifi_buf[0]) {
+					IPDState = IPD_STATE_HANDLE_HEADER;
+				}
+				break;
+				// Not return, 
+				// because we don't know whether it's an another packet type
+			case IPD_STATE_HANDLE_HEADER:
+				if( Index >= 4) {
+					if (usart_wifi_buf[0] == '+' && 
+						usart_wifi_buf[1] == 'I' && 
+						usart_wifi_buf[2] == 'P' && 
+						usart_wifi_buf[3] == 'D' 	) {
+							IPDState = IPD_STATE_HANDLE_SOCKET_ID;
+						} else {
+							IPDState = IPD_STATE_START_PROBE;
+						}
+				}
+				// Not return, 
+				// because we don't know whether it's an another packet type
+				break;
+			case IPD_STATE_HANDLE_SOCKET_ID:
+				if(Index <= 4) {
+					// retrive the previous state
+					IPDState = IPD_STATE_START_PROBE;
+					break;
+				}
+				FirstComma = 0;
+				SecondComma = 0;
+				for(i = 4; i < Index; i++) {
+					if(',' == usart_wifi_buf[i] && 0 == FirstComma) {
+						FirstComma = i;
+					}
+					else if(',' == usart_wifi_buf[i] && FirstComma != 0) {
+						SecondComma = i;
+						break;
+					}
+				}
+				if(0 == FirstComma || 0 == SecondComma) {
+					return;
+				}
+				u32Tmp = SecondComma-FirstComma-1; // number of digit
+				if(u32Tmp> NUM_ASCII_SIZE - 1) {  // "-1" for '\0'
+					IPDState = IPD_STATE_START_PROBE;
+					break;
+				}
+				memcpy((void *)IPDNum, (void *)usart_wifi_buf[FirstComma+1], u32Tmp);
+				IPDNum[u32Tmp] = '\0';
+				u32Tmp = atoi(IPDNum);
+				if(u32Tmp < 0 || u32Tmp > 4) {
+					// out of range
+					IPDState = IPD_STATE_START_PROBE;
+					break;
+				}
+				u16SocketID = u32Tmp;
+				IPDState = IPD_STATE_HANDLE_SIZE;
+				return;
+				break; // never come here
+			case IPD_STATE_HANDLE_SIZE:
+				Colon = 0;
+				SecondComma = 0;
+				for(i = Index - 1; i > 4; i--) {
+					if(';' == usart_wifi_buf[i] && 0 == Colon) {
+						Colon = i;
+					}
+					else if(',' == usart_wifi_buf[i] && Colon != 0) {
+						SecondComma = i;
+						break;
+					}
+				}
+				if(0 == Colon || 0 == SecondComma) {
+					return;
+				}
+				u32Tmp = Colon - SecondComma - 1; // number of digit
+				if(u32Tmp> NUM_ASCII_SIZE - 1) {  // "-1" for '\0'
+					IPDState = IPD_STATE_START_PROBE;
+					break;
+				}
+				memcpy((void *)IPDNum, (void *)&usart_wifi_buf[SecondComma+1], u32Tmp);
+				IPDNum[u32Tmp] = '\0';
+				u32Tmp = atoi(IPDNum);
+				if(u32Tmp > 5000) {  // max msg size 5000(temporarily 5000)
+					// out of range
+					IPDState = IPD_STATE_START_PROBE;
+					break;
+				}
+				u16PackSize = u32Tmp;
+				IPDState = IPD_STATE_HANDLE_CONTENT;
+				return;
+				break; // never come here
+			case IPD_STATE_HANDLE_CONTENT:
+				if(Index > Colon + u16PackSize) {
+					IPDState = IPD_STATE_COMPLETED;
+				} else {
+					return;
+					break; // never come here
+				}
+				// no break here
+			case IPD_STATE_COMPLETED:
+				// TODO:
+				// there maybe \r\n left;
+				if(u16PackSize > SOCKET_BUF_SIZE) {
+					// IPDState = IPD_STATE_START_PROBE;
+				} else if(u16SocketID > 4) {
+					// IPDState = IPD_STATE_START_PROBE;
+				} else {
+					memcpy(sock_data[u16SocketID].buf, &usart_wifi_buf[Colon+1], u16PackSize);
+				}
+				IPDState = IPD_STATE_START_PROBE;
+				return;
+			default:
+				IPDState = IPD_STATE_START_PROBE;
+				break;
+		}
+
+		// END TERMINAL PACKET
 		if(Index > 2) {
 			if( usart_wifi_buf[Index-1] == 'K' && 
 				usart_wifi_buf[Index-2] == 'O'	) 
@@ -217,10 +349,6 @@ volatile void vUARTInterruptHandler( void )
 		RxData = USART_RECEIVE(USART_WIFI, RxData);
 		return;
 	}
-	
-	
-	 
-	
 }
 
 sint32_t uputs(USART_TypeDef * usart, sint8_t * str)
@@ -268,7 +396,12 @@ void vLedTask(void *pvParameters)
 sint32_t BC_WifiInit(void)
 {
 	int i;
+
 	TickType_t delay_time_ms = 500;
+	
+	StartAcceptFlag = 0;
+	StartReceiveFlag = 0;
+	
 	for(i = 0; i < BC_MAX_SOCKET_NUM; i++) {
 		memset(&sock_data[i], 0, sizeof(BC_SocketData));
 	}
@@ -296,7 +429,6 @@ sint32_t BC_WifiInit(void)
 	uputs(USART_WIFI, msg);
 	vTaskDelay(delay_time_ms);
 	
-	memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
 	StartReceiveFlag = 1;
 	uputs(USART_WIFI, "AT+CIFSR=?");
 	// TODO:
@@ -312,7 +444,6 @@ sint32_t BC_WifiInit(void)
 	INADDR_ANY[i] = '\0';
 	
 	return 0;
-	
 }
 
 void vTcpServerTask(void *pvParameters)
@@ -418,6 +549,10 @@ sint32_t BC_Listen(sint32_t sockfd, sint32_t backlog)
 		return -3;
 	}
 	sock_data[sockfd].backlog = backlog;
+	sprintf(msg, "AT+CIPSERVER=1,%d", sock_data[sockfd].addr.sin_port);
+	uputs(USART_WIFI, msg);
+	sprintf(msg, "Server info: IP=%s, PORT=%d\r\n", INADDR_ANY, sock_data[sockfd].addr.sin_port);
+	uputs(USART1, msg);
 	
 	return 0;
 }
@@ -427,19 +562,57 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 	if(!ASSERT_SOCK_VALID(sockfd)) {
 		return -1;
 	}
+	if(!cliaddr) {
+		return -2;
+	}
+	if(!addrlen) {
+		return -3;
+	}
+	if(!sock_data[sockfd].valid) {
+		return -4;
+	}
 	// wait for the semphore
-	// copy cliaddr to sock_data
-	// set sock_data.valid
+	
+	StartReceiveFlag = 1;
+	StartAcceptFlag = 1;
+	
+	k_cliaddr = cliaddr;
+	k_addrlen = addrlen;
+	while(StartAcceptFlag)
+		;
+	// TODO:
+	// check the server sockfd
+	
 	return 0;
 }
 
 sint32_t BC_Connect(sint32_t sockfd, const BC_Sockaddr * servaddr, uint32_t addrlen)
 {
+	if(!ASSERT_SOCK_VALID(sockfd)) {
+		return -1;
+	}
+	if(!servaddr) {
+		return -2;
+	}
+	if(!sock_data[sockfd].valid) {
+		return -3;
+	}
+
+	sprintf(msg, "AT+CIPSTART=%d,\"TCP\",\"%s\",%d", sockfd, servaddr->sin_addr.s_addr, servaddr->sin_port);
 	return 0;
 }
 
 sint32_t BC_Close(sint32_t sockfd)
 {
+	if(!ASSERT_SOCK_VALID(sockfd)) {
+		return -1;
+	}
+	if(!sock_data[sockfd].valid) {
+		return -2;
+	}
+	sprintf(msg, "AT+CIPCLOSE=%d", sockfd);
+	uputs(USART_WIFI, msg);
+	sock_data[sockfd].valid = FALSE;
 	return 0;
 }
 
@@ -448,13 +621,16 @@ sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
 	if(!ASSERT_SOCK_VALID(sockfd)) {
 		return -1;
 	}
-	if(!sock_data[sockfd].valid) {
+	if(!buff) {
 		return -2;
 	}
-	if(!buff) {
+	if(!sock_data[sockfd].valid) {
 		return -3;
 	}
 	// wait semphore
+	StartReceiveFlag = 1;
+	while(StartReceiveFlag)
+		;
 	// read USART_WIFI(in ISA)
 	// taskYIELD
 	return 0;
@@ -465,12 +641,20 @@ sint32_t BC_Send(sint32_t sockfd, const void * buff, uint32_t nbytes, sint32_t f
 	if(!ASSERT_SOCK_VALID(sockfd)) {
 		return -1;
 	}
-	if(!sock_data[sockfd].valid) {
+	if(!buff) {
 		return -2;
 	}
-	if(!buff) {
+	if(!sock_data[sockfd].valid) {
 		return -3;
 	}
+
+	// memset(msg, 0, sizeof(msg));
+	
+	sprintf(msg, "AT+CIPSEND=0,%d", nbytes);
+	uputs(USART_WIFI, msg);
+	vTaskDelay(10); // TODO
+	uputs(USART_WIFI, (sint8_t *)buff);
+	vTaskDelay(10); // TODO
 	
 	return 0;
 }
