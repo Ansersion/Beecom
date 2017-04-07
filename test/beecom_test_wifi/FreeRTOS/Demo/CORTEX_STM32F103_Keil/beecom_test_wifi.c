@@ -7,6 +7,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -15,11 +16,17 @@
 
 #define BC_CENTER_SERV_PORT 	54321
 
+#define HFSR 	((uint32_t *)0xE000ED2C)
+#define MFSR ((char *)0xE000ED28)
+#define BFSR ((char *)0xE000ED29)
+#define UFSR ((char *)0xE000ED2A)
+#define BFAR ((uint32_t *)0xE000ED38)
+
 // Scheme:
 // socket 0: server
 // socket 1: client
 // socket 2: reserved
-#define BC_MAX_SOCKET_NUM 		3
+#define BC_MAX_SOCKET_NUM 		5
 #define ASSERT_SOCK_VALID(s) ((s) >= 0 && (s) < BC_MAX_SOCKET_NUM)
 
 #define NUM_ASCII_SIZE 	6
@@ -40,12 +47,30 @@ uint8_t usart_wifi_buf[WIFI_BUF_SIZE];
 
 uint8_t SrvBuf[TASK_BUF_SIZE]; 
 
+// TODO:
+// "WifiRecvFlag" need a mutex
+uint32_t WifiRecvFlag = 0; // general recv flag
 BC_SocketData sock_data[BC_MAX_SOCKET_NUM];
 
 #define SOCKET_BUF_SIZE 1024
+// BC_MAX_SOCKET_NUM sock buffer
 uint8_t SockBuf_0[SOCKET_BUF_SIZE];
 uint8_t SockBuf_1[SOCKET_BUF_SIZE];
 uint8_t SockBuf_2[SOCKET_BUF_SIZE];
+uint8_t SockBuf_3[SOCKET_BUF_SIZE];
+uint8_t SockBuf_4[SOCKET_BUF_SIZE];
+
+
+static QueueHandle_t xQueue0 = NULL;
+static QueueHandle_t xQueue1 = NULL;
+static QueueHandle_t xQueue2 = NULL;
+static QueueHandle_t xQueue3 = NULL;
+static QueueHandle_t xQueue4 = NULL;
+
+sint32_t BC_Atoi(char n)
+{
+	return n - '0';
+}
 
 
 void LedInit(void)
@@ -117,31 +142,77 @@ void Usart1Init(uint32_t bound)
 
 void Usart2Init(uint32_t bound)
 {
+	USART_InitTypeDef USART_InitStructure;
+	GPIO_InitTypeDef GPIO_InitStructure; 
+	NVIC_InitTypeDef NVIC_InitStructure;
+	
+	/* Enable GPIO clock */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
+	
+	/* USART clock */
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE); 
+
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; 
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2; 
+	GPIO_Init(GPIOA,&GPIO_InitStructure); 
+
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; 
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3; 
+	GPIO_Init(GPIOA,&GPIO_InitStructure); 
+	
+	USART_DeInit(USART2);
+	
+	/* Usart init£¬9600£¬8bit data bit,1 stop bit, No Parity and flow control, rx tx enable */
+	USART_InitStructure.USART_BaudRate               = bound;
+	USART_InitStructure.USART_WordLength             = USART_WordLength_8b;
+	USART_InitStructure.USART_StopBits               = USART_StopBits_1;
+	USART_InitStructure.USART_Parity                 = USART_Parity_No;
+	USART_InitStructure.USART_HardwareFlowControl    = USART_HardwareFlowControl_None;
+	USART_InitStructure.USART_Mode                   = USART_Mode_Rx | USART_Mode_Tx;
+	USART_Init(USART2, &USART_InitStructure);
+	
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); 
+
+	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQChannel;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+	
+	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+		
+	USART_Cmd(USART2, ENABLE);
+	/*
     GPIO_InitTypeDef GPIO_InitStructure;
     NVIC_InitTypeDef NVIC_InitStructure;
     USART_InitTypeDef USART_InitStructure;
     
-    /* Enable the USART2 Pins Software Remapping */
+    // Enable the USART2 Pins Software Remapping
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA , ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE); 
     
-    /* Configure USART2 Rx (PA.03) as input floating */
+    // Configure USART2 Rx (PA.03) as input floating
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;    
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
     
-    /* Configure USART2 Tx (PA.02) as alternate function push-pull */
+    // Configure USART2 Tx (PA.02) as alternate function push-pull
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
     
-    /* Enable the USART2 Interrupt */
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); 
+	
+    // Enable the USART2 Interrupt
     NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQChannel;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);    
+	
+	USART_DeInit(USART2);
     
     USART_InitStructure.USART_BaudRate = bound;                
     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
@@ -152,37 +223,327 @@ void Usart2Init(uint32_t bound)
     
     USART_Init(USART2, &USART_InitStructure);
     USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
-    /* Enable USART2 */
+    // Enable USART2
     USART_Cmd(USART2, ENABLE);
+	*/
 }
 
-void USART2_IRQHandler(void)
-{
-	uint16_t RxData = 0;
-	if(USART_GetITStatus(USART2, USART_IT_RXNE) == RESET) {
-		return;
-	}
-	USART_RECEIVE(USART2, RxData);
-	printf("%c\r\n", (uint8_t)RxData);
-}
-
-volatile void vUARTInterruptHandler( void )
-{
-	
+volatile void xUSART2_IRQHandler(void)
+{	
 	static uint32_t Index = 0;
 	static uint16_t u16PackSize = 0;
 	static uint32_t IPDState = IPD_STATE_START_PROBE;
+	// static uint32_t 
 	static uint16_t num = 0;
 	static uint8_t i = 0;
 	static uint16_t FirstComma = 0, SecondComma = 0, Colon = 0;
 	static uint16_t RxData=0;
 	static uint16_t u16SocketID = 0;
+	static sint32_t u32CurrentSockId = -1;
 	uint32_t u32Tmp = 0;
 	
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) == RESET) {
 		return;
 	}
 	
+	RxData = USART_RECEIVE(USART_WIFI, RxData);
+	
+	if(GET_WIFI_USART_STATE() == WIFI_USART_STATE_RUNNING) {
+		usart_wifi_buf[Index++] = (uint8_t)RxData;
+		if(Index >= WIFI_BUF_SIZE - 1) {
+			// StartReceiveFlag = 0;
+			// SET_WIFI_USART_STATE(WIFI_MSG_FLAG_BUF_OVERFLOW);
+			IPDState = IPD_STATE_START_PROBE;
+			usart_wifi_buf[WIFI_BUF_SIZE-1] = '\0';
+			Index = 0;
+			return;
+		}
+		// IPD PACKET
+		switch(IPDState) {
+			case IPD_STATE_START_PROBE:
+				if('+' == usart_wifi_buf[0]) {
+					IPDState = IPD_STATE_HANDLE_HEADER;
+				}
+				break;
+				// Not return, 
+				// because we don't know whether it's an another packet type
+			case IPD_STATE_HANDLE_HEADER:
+				if( Index >= 4) {
+					if (usart_wifi_buf[0] == '+' && 
+						usart_wifi_buf[1] == 'I' && 
+						usart_wifi_buf[2] == 'P' && 
+						usart_wifi_buf[3] == 'D' 	) {
+							IPDState = IPD_STATE_HANDLE_SOCKET_ID;
+						} else {
+							IPDState = IPD_STATE_START_PROBE;
+						}
+				}
+				// Not return, 
+				// because we don't know whether it's an another packet type
+				break;
+			case IPD_STATE_HANDLE_SOCKET_ID:
+				if(Index <= 4) {
+					// retrive the previous state
+					IPDState = IPD_STATE_START_PROBE;
+					break;
+				}
+				FirstComma = 0;
+				SecondComma = 0;
+				for(i = 4; i < Index; i++) {
+					if(',' == usart_wifi_buf[i] && 0 == FirstComma) {
+						FirstComma = i;
+					}
+					else if(',' == usart_wifi_buf[i] && FirstComma != 0) {
+						SecondComma = i;
+						break;
+					}
+				}
+				if(0 == FirstComma || 0 == SecondComma) {
+					return;
+				}
+				u32Tmp = SecondComma-FirstComma-1; // number of digit
+				if(u32Tmp> NUM_ASCII_SIZE - 1) {  // "-1" for '\0'
+					IPDState = IPD_STATE_START_PROBE;
+					break;
+				}
+				memcpy((void *)IPDNum, (void *)usart_wifi_buf[FirstComma+1], u32Tmp);
+				IPDNum[u32Tmp] = '\0';
+				u32Tmp = atoi(IPDNum);
+				if(u32Tmp < 0 || u32Tmp > 4) {
+					// out of range
+					IPDState = IPD_STATE_START_PROBE;
+					break;
+				}
+				// u16SocketID = u32Tmp;
+				u32CurrentSockId = u32Tmp;
+				IPDState = IPD_STATE_HANDLE_SIZE;
+				return;
+				break; // never come here
+			case IPD_STATE_HANDLE_SIZE:
+				Colon = 0;
+				SecondComma = 0;
+				for(i = Index - 1; i > 4; i--) {
+					if(';' == usart_wifi_buf[i] && 0 == Colon) {
+						Colon = i;
+					}
+					else if(',' == usart_wifi_buf[i] && Colon != 0) {
+						SecondComma = i;
+						break;
+					}
+				}
+				if(0 == Colon || 0 == SecondComma) {
+					return;
+				}
+				u32Tmp = Colon - SecondComma - 1; // number of digit
+				if(u32Tmp> NUM_ASCII_SIZE - 1) {  // "-1" for '\0'
+					IPDState = IPD_STATE_START_PROBE;
+					break;
+				}
+				memcpy((void *)IPDNum, (void *)&usart_wifi_buf[SecondComma+1], u32Tmp);
+				IPDNum[u32Tmp] = '\0';
+				u32Tmp = atoi(IPDNum);
+				if(u32Tmp > 5000) {  // max msg size 5000(temporarily 5000)
+					// out of range
+					IPDState = IPD_STATE_START_PROBE;
+					break;
+				}
+				u16PackSize = u32Tmp;
+				IPDState = IPD_STATE_HANDLE_CONTENT;
+				return;
+				break; // never come here
+			case IPD_STATE_HANDLE_CONTENT:
+				if(Index > Colon + u16PackSize) {
+					IPDState = IPD_STATE_COMPLETED;
+				} else {
+					return;
+					break; // never come here
+				}
+				// no break here
+			case IPD_STATE_COMPLETED:
+				// TODO:
+				// handle \r\n left;
+				if(u16PackSize > SOCKET_BUF_SIZE) {
+					IPDState = IPD_STATE_START_PROBE;
+				} else if(u16SocketID > 4) {
+					IPDState = IPD_STATE_START_PROBE;
+				} else {
+					if(usart_wifi_buf[Index-1] == '\n' && usart_wifi_buf[Index-2] == '\r') {
+						memcpy(sock_data[u32CurrentSockId].buf, &usart_wifi_buf[Colon+1], u16PackSize);
+						IPDState = IPD_STATE_START_PROBE;
+					}
+				}
+				
+				return;
+			default:
+				IPDState = IPD_STATE_START_PROBE;
+				break;
+		}
+		
+		// client connects to local server
+		if(Index >= 1) {
+			if(isdigit(usart_wifi_buf[0])) {
+				u32CurrentSockId = BC_Atoi(usart_wifi_buf[0]);
+				if(Index >= WIFI_MSG_CONNECT_TERMINATOR_SIZE) {
+					if( usart_wifi_buf[Index-1] == '\n'	&& 
+						usart_wifi_buf[Index-2] == '\r'	&&
+						usart_wifi_buf[Index-3] == 'T' 	&&
+						usart_wifi_buf[Index-4] == 'C' 	&&
+						usart_wifi_buf[Index-5] == 'E' 	&&	
+						usart_wifi_buf[Index-6] == 'N' 	&&
+						usart_wifi_buf[Index-7] == 'N' 	&&
+						usart_wifi_buf[Index-8] == 'O' 	&&
+						usart_wifi_buf[Index-9] == 'C' 	) {
+							sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CONNECT;
+							return;
+						}							
+				}
+				if(Index >= WIFI_MSG_CLOSED_TERMINATOR_SIZE) {
+					if( usart_wifi_buf[Index-1] == '\n'	&& 
+						usart_wifi_buf[Index-2] == '\r'	&&
+						usart_wifi_buf[Index-3] == 'D' 	&&
+						usart_wifi_buf[Index-4] == 'E' 	&&	
+						usart_wifi_buf[Index-5] == 'S' 	&&
+						usart_wifi_buf[Index-6] == 'O' 	&&
+						usart_wifi_buf[Index-7] == 'L' 	&&
+						usart_wifi_buf[Index-8] == 'C' 	) {
+							sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
+							return;
+						}							
+				}
+			}
+		}
+		if(Index >= 10) {
+			if( usart_wifi_buf[Index-1] == 'S'	&& 
+				usart_wifi_buf[Index-2] == 'U'	&&
+				usart_wifi_buf[Index-3] == 'T' 	&&
+				usart_wifi_buf[Index-4] == 'A' 	&&
+				usart_wifi_buf[Index-5] == 'T' 	&&	
+				usart_wifi_buf[Index-6] == 'S' 	&&
+				usart_wifi_buf[Index-7] == 'P' 	&&
+				usart_wifi_buf[Index-8] == 'I' 	&&
+				usart_wifi_buf[Index-9] == 'C' 	&& 
+				usart_wifi_buf[Index-10] =='+' 	) {
+				}	
+		}
+		// END TERMINAL PACKET
+		if(Index >= WIFI_MSG_OK_TERMINATOR_SIZE) {
+			if( usart_wifi_buf[Index-1] == '\n'	&& 
+				usart_wifi_buf[Index-2] == '\r'	&&
+				usart_wifi_buf[Index-3] == 'K' 	&&
+				usart_wifi_buf[Index-4] == 'O' 	) 
+			{
+					usart_wifi_buf[Index] = '\0';
+					WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
+					Index = 0;
+					return;
+			}
+		}
+		if(Index >= WIFI_MSG_ERR_TERMINATOR_SIZE) {
+			if( usart_wifi_buf[Index-1] == '\n'	&& 
+				usart_wifi_buf[Index-2] == '\r'	&&
+				usart_wifi_buf[Index-3] == 'R' 	&&
+				usart_wifi_buf[Index-4] == 'O' 	&&
+				usart_wifi_buf[Index-5] == 'R' 	&&
+				usart_wifi_buf[Index-6] == 'R' 	&&
+				usart_wifi_buf[Index-7] == 'E' 	) 
+			{
+					usart_wifi_buf[Index] = '\0';
+					WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_ERR;
+					Index = 0;
+					return;
+			}
+		}
+	} else if(GET_WIFI_USART_STATE() == WIFI_USART_STATE_INIT) {
+		usart_wifi_buf[Index++] = (uint8_t)RxData;
+		if(Index >= WIFI_BUF_SIZE - 1) {
+			// StartReceiveFlag = 0;
+			WifiRecvFlag |= WIFI_MSG_FLAG_BUF_OVERFLOW;
+			IPDState = IPD_STATE_START_PROBE;
+			usart_wifi_buf[WIFI_BUF_SIZE-1] = '\0';
+			Index = 0;
+			return;
+		}
+		WifiRecvFlag = 0;
+		// END TERMINAL PACKET
+		if(Index >= WIFI_MSG_OK_TERMINATOR_SIZE) {
+			if( usart_wifi_buf[Index-1] == '\n'	&& 
+				usart_wifi_buf[Index-2] == '\r'	&&
+				usart_wifi_buf[Index-3] == 'K' 	&&
+				usart_wifi_buf[Index-4] == 'O' 	) 
+			{
+					usart_wifi_buf[Index] = '\0';
+					WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
+					Index = 0;
+					return;
+			}
+		}
+		if(Index >= WIFI_MSG_ERR_TERMINATOR_SIZE) {
+			if( usart_wifi_buf[Index-1] == '\n'	&& 
+				usart_wifi_buf[Index-2] == '\r'	&&
+				usart_wifi_buf[Index-3] == 'R' 	&&
+				usart_wifi_buf[Index-4] == 'O' 	&&
+				usart_wifi_buf[Index-5] == 'R' 	&&
+				usart_wifi_buf[Index-6] == 'R' 	&&
+				usart_wifi_buf[Index-7] == 'E' 	) 
+			{
+					usart_wifi_buf[Index] = '\0';
+					WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_ERR;
+					Index = 0;
+					return;
+			}
+		}
+		
+	}
+	return;
+}
+
+volatile void HardFault_Handler(void)
+{
+	sprintf(msg, "HardFault:%x\r\n", *HFSR);
+	sprintf(msg+strlen(msg), "MemManage:%x\r\n", *MFSR);
+	sprintf(msg+strlen(msg), "BusFault:%x\r\n", *BFSR);
+	sprintf(msg+strlen(msg), "BFAR:%x\r\n", *BFAR);
+	sprintf(msg+strlen(msg), "UsageFault:%x\r\n", *UFSR);
+	uputs(USART1, msg);
+	for(;;);
+}
+
+volatile void MemManage_Handler(void)
+{
+
+	sprintf(msg, "MemManage:%x\r\n", *MFSR);
+	uputs(USART1, msg);
+	for(;;);
+}
+
+volatile void BusFault_Handler(void)
+{
+
+	sprintf(msg, "BusFault:%x\r\n", *BFSR);
+	sprintf(msg+strlen(msg), "BFAR:%x\r\n", *BFAR);
+	uputs(USART1, msg);
+	for(;;);
+}
+
+volatile void UsageFault_Handler(void)
+{
+
+	sprintf(msg, "UsageFault:%x\r\n", *UFSR);
+	uputs(USART1, msg);
+	for(;;);
+}
+
+volatile void vUARTInterruptHandler( void )
+{
+	uint16_t RxData = 0;
+	if(USART_GetITStatus(USART1, USART_IT_RXNE) == RESET) {
+		return;
+	}
+	USART_RECEIVE(USART1, RxData);
+	xxx = (sint8_t)RxData;
+
+	
+	/*
 	if(StartReceiveFlag) {
 		RxData = USART_RECEIVE(USART_WIFI, RxData);
 		usart_wifi_buf[Index++] = (uint8_t)RxData;
@@ -349,6 +710,7 @@ volatile void vUARTInterruptHandler( void )
 		RxData = USART_RECEIVE(USART_WIFI, RxData);
 		return;
 	}
+	*/
 }
 
 sint32_t uputs(USART_TypeDef * usart, sint8_t * str)
@@ -374,6 +736,8 @@ void vLedTask(void *pvParameters)
 {
 	int xxx_old;
 	TickType_t ms = 500;
+	int init;
+	
 
 	xxx = 'a';
 	xxx_old = xxx;
@@ -384,23 +748,39 @@ void vLedTask(void *pvParameters)
 		LED2TURN();
 		
 		if(xxx != xxx_old) {
-			uputs(USART2, "AT+RST");
 			xxx_old = xxx;
 		}
-		sprintf(msg, "Ansersion: %c\r\n", xxx);
-		uputs(USART1, msg);
+		if(xxx == 'w') {
+			if(init == 0) {
+				init = 1;
+				uputs(USART1, "Start WifiInit\r\n");
+				BC_WifiInit();
+			}
+			uputs(USART1, INADDR_ANY);
+			uputs(USART1, "\r\n");
+		} else {
+			init = 0;
+			sprintf(msg, "Ansersion: %c\r\n", xxx);
+			uputs(USART1, msg);
+		}
 		
 	}
 }
 
 sint32_t BC_WifiInit(void)
 {
-	int i;
-
-	TickType_t delay_time_ms = 500;
+	int i = 0;
+	char * str_pos = NULL;
+	TickType_t delay_time_ms = 50;
+	uint8_t * tmp_ptr = NULL;
 	
-	StartAcceptFlag = 0;
-	StartReceiveFlag = 0;
+	// StartAcceptFlag = 0;
+	// StartReceiveFlag = 0;
+	
+	if(BC_CreateQueue() != BC_OK) {
+		uputs(USART_TERMINAL, "BC_CreateQueue: Error\r\n");
+		return -1;
+	}
 	
 	for(i = 0; i < BC_MAX_SOCKET_NUM; i++) {
 		memset(&sock_data[i], 0, sizeof(BC_SocketData));
@@ -408,42 +788,90 @@ sint32_t BC_WifiInit(void)
 	sock_data[0].buf = SockBuf_0;
 	sock_data[1].buf = SockBuf_1;
 	sock_data[2].buf = SockBuf_2;
-	
-	uputs(USART_WIFI, "AT+CWMODE=1");
-	vTaskDelay(delay_time_ms);
-	
-	uputs(USART_WIFI, "AT+RST");
-	vTaskDelay(delay_time_ms);
+	sock_data[3].buf = SockBuf_3;
+	sock_data[4].buf = SockBuf_4;
 
-	// SER WIFI SSID ANF PASSWORD
-	uputs(USART_WIFI, "AT+CWJAP=\"hb402-hb\",\"68704824\"");
-	vTaskDelay(delay_time_ms);
-	vTaskDelay(delay_time_ms);
-	vTaskDelay(delay_time_ms);
-	vTaskDelay(delay_time_ms);
+	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
+		uputs(USART_WIFI, "AT+CWMODE=1\r\n");
+		vTaskDelay(delay_time_ms);
+		uputs(USART_TERMINAL, "AT+CWMODE=1...\r\n");
+	}
+	uputs(USART_TERMINAL, "AT+CWMODE=1: OK\r\n");
 	
-	uputs(USART_WIFI, "AT+CIPMUX=1");
-	vTaskDelay(delay_time_ms);
+	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
+		uputs(USART_WIFI, "AT+RST\r\n");
+		vTaskDelay(delay_time_ms);
+		uputs(USART_TERMINAL, "AT+RST...\r\n");
+	}
+	uputs(USART_TERMINAL, "AT+RST: OK\r\n");
+
+	// SER WIFI SSID AND PASSWORD
+	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
+		uputs(USART_WIFI, "AT+CWJAP=\"hb402-hb\",\"68704824\"\r\n");
+		vTaskDelay(delay_time_ms);
+		uputs(USART_TERMINAL, "AT+CWJAP=\"hb402-hb\",\"68704824\"...\r\n");
+	}
+	uputs(USART_TERMINAL, "AT+CWJAP=\"hb402-hb\",\"68704824\": OK\r\n");
 	
-	sprintf(msg, "AT+CIPSERVER=1,%d", BC_CENTER_SERV_PORT);
-	uputs(USART_WIFI, msg);
-	vTaskDelay(delay_time_ms);
+	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
+		uputs(USART_WIFI, "AT+CIPMUX=1\r\n");
+		vTaskDelay(delay_time_ms);
+		uputs(USART_TERMINAL, "AT+CIPMUX=1...\r\n");
+	}
+	uputs(USART_TERMINAL, "AT+CIPMUX=1: OK\r\n");
 	
-	StartReceiveFlag = 1;
-	uputs(USART_WIFI, "AT+CIFSR=?");
-	// TODO:
-	while(StartReceiveFlag)
-		;
+	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
+		sprintf(msg, "AT+CIPSERVER=1,%d\r\n", BC_CENTER_SERV_PORT);
+		uputs(USART_WIFI, msg);
+		vTaskDelay(delay_time_ms);
+		sprintf(msg, "AT+CIPSERVER=1,%d...\r\n", BC_CENTER_SERV_PORT);
+		uputs(USART_TERMINAL, msg);
+	}
+	sprintf(msg, "AT+CIPSERVER=1,%d: OK\r\n", BC_CENTER_SERV_PORT);
+	uputs(USART_TERMINAL, msg);
+	
+	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
+		uputs(USART_WIFI, "AT+CIFSR\r\n");
+		vTaskDelay(delay_time_ms);
+		uputs(USART_TERMINAL, "AT+CIFSR\r\n");
+	}
+	uputs(USART_TERMINAL, "AT+CIFSR: OK\r\n");
+
+	tmp_ptr = usart_wifi_buf;
+	str_pos = strstr(tmp_ptr, "STAIP,");
+	if(!str_pos) {
+		uputs(USART_TERMINAL, "Parse IP: Error\r\n");
+		return -2;
+	}
+	tmp_ptr += strlen("STAIP,");
+	tmp_ptr += 1; // at position of "
+	tmp_ptr += 1; // at the first number 
 	memset(INADDR_ANY, 0, 16);
 	for(i = 0; i < 16;i++) {
-		if('.' == usart_wifi_buf[i] || isdigit(usart_wifi_buf[i])) {
-			INADDR_ANY[i] = usart_wifi_buf[i]; 
+		if('.' == tmp_ptr[i] || isdigit(tmp_ptr[i])) {
+			INADDR_ANY[i] = tmp_ptr[i]; 
+		} else {
+			break;
 		}
-		break;
 	}
 	INADDR_ANY[i] = '\0';
+	sprintf(msg, "My IP is %s\r\n", INADDR_ANY);
+	uputs(USART_TERMINAL, msg);
 	
 	return 0;
+}
+
+sint32_t BC_CreateQueue(void)
+{
+	sint32_t result = BC_OK;
+	
+	if(!(xQueue0 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	if(!(xQueue1 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	if(!(xQueue2 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	if(!(xQueue3 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	if(!(xQueue4 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	
+	return result;
 }
 
 void vTcpServerTask(void *pvParameters)

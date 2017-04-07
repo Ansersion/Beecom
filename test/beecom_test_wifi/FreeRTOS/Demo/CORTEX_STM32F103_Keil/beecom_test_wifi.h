@@ -5,6 +5,8 @@
 #include "stm32f10x_it.h"
 
 #include "beecom_wifi_type.h"
+
+extern uint32_t StartReceiveFlag;
 	
 #define USART_SEND(usart_type, ch) 		((usart_type)->DR = (ch) & (uint16_t)0x01FF)
 #define USART_RECEIVE(usart_type, ch)	((ch) = (usart_type)->DR & (uint16_t)0x01FF)
@@ -17,7 +19,29 @@
 
 #define TASK_BUF_SIZE 	256
 
-#define USART_WIFI 	USART2
+#define USART_TERMINAL 	USART1
+#define USART_WIFI 		USART2
+
+
+enum {
+	WIFI_USART_STATE_INIT = 0,
+	WIFI_USART_STATE_RUNNING,
+};
+#define GET_WIFI_USART_STATE() 	(StartReceiveFlag)
+#define SET_WIFI_USART_STATE(F) (StartReceiveFlag=(F))
+
+#define WIFI_MSG_FLAG_GENERAL_OK	0x00000001
+#define WIFI_MSG_FLAG_GENERAL_ERR 	0x00000002
+#define WIFI_MSG_FLAG_GOT_CONNECT	0x00000004
+#define WIFI_MSG_FLAG_GOT_CLOSED	0x00000008
+
+#define WIFI_MSG_FLAG_BUF_OVERFLOW 	0x80000000
+
+
+#define WIFI_MSG_OK_TERMINATOR_SIZE 		4 // strlen("OK\r\n")
+#define WIFI_MSG_ERR_TERMINATOR_SIZE 		7 // strlen("ERROR\r\n")
+#define WIFI_MSG_CONNECT_TERMINATOR_SIZE 	9 // strlen("CONNECT\r\n")
+#define WIFI_MSG_CLOSED_TERMINATOR_SIZE 	8 // strlen("CLOSED\r\n")
 
 enum IPD_STATE {
 	IPD_STATE_NONE = 0,
@@ -29,13 +53,23 @@ enum IPD_STATE {
 	IPD_STATE_COMPLETED,
 };
 
+sint32_t BC_Atoi(char n);
+
 void LedInit(void);
 
 void Usart1Init(uint32_t boundrate);
 void Usart2Init(uint32_t boundrate);
 
+volatile void NMI_Handler(void);
+volatile void HardFault_Handler(void);
+volatile void MemManage_Handler(void);
+volatile void BusFault_Handler(void);
+volatile void UsageFault_Handler(void);
+
 /* UART interrupt handler. */
 volatile void vUARTInterruptHandler( void );
+
+volatile void xUSART2_IRQHandler(void);
 
 // in stm32f10x_it.h
 // void USART2_IRQHandler(void);
@@ -48,6 +82,7 @@ void vTcpServerTask(void *pvParameters);
 sint32_t uputs(USART_TypeDef * usart, sint8_t * str);
 
 sint32_t BC_WifiInit(void);
+sint32_t BC_CreateQueue(void);
 
 // wifi APIs
 // They are similar to linux socket

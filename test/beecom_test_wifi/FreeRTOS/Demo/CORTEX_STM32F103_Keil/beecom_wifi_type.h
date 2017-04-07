@@ -10,6 +10,10 @@
 
 #define LISTEN_QUEUE 	8
 
+#define BC_OK 	0
+#define BC_ERR 	1
+
+
 
 // struct in_addr {
 //	uint32_t s_addr;
@@ -27,6 +31,7 @@ typedef struct BC_Sockaddr {
 }BC_Sockaddr;
 
 typedef struct BC_SocketData {
+	uint32_t msg_flag;
 	BC_Sockaddr addr;
 	bool_t valid;
 	uint8_t * buf;

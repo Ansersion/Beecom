@@ -244,7 +244,7 @@ int main( void )
 	LedInit();
 	Usart1Init(9600);
 	// Wifi initialization
-	// Usart2Init(9600);
+	Usart2Init(115200);
 	// BC_WifiInit();
 	
 	xTaskCreate( vLedTask, "LED_TEST", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+4, NULL );

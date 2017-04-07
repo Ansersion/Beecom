@@ -1,0 +1,2 @@
+最大支持socket数量：
+1个server + 4个client
