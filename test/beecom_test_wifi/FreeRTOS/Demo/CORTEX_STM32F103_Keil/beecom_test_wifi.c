@@ -41,6 +41,7 @@ uint32_t * k_addrlen = NULL;
 
 sint8_t xxx;
 sint8_t msg[256];
+uint8_t u16data[32];
 
 #define WIFI_BUF_SIZE 	4096
 uint8_t usart_wifi_buf[WIFI_BUF_SIZE];
@@ -142,14 +143,15 @@ void Usart1Init(uint32_t bound)
 
 void Usart2Init(uint32_t bound)
 {
+	/*
 	USART_InitTypeDef USART_InitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure; 
 	NVIC_InitTypeDef NVIC_InitStructure;
 	
-	/* Enable GPIO clock */
+	// Enable GPIO clock
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
 	
-	/* USART clock */
+	// USART clock
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE); 
 
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
@@ -163,7 +165,7 @@ void Usart2Init(uint32_t bound)
 	
 	USART_DeInit(USART2);
 	
-	/* Usart init，9600，8bit data bit,1 stop bit, No Parity and flow control, rx tx enable */
+	// Usart init，9600，8bit data bit,1 stop bit, No Parity and flow control, rx tx enable
 	USART_InitStructure.USART_BaudRate               = bound;
 	USART_InitStructure.USART_WordLength             = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits               = USART_StopBits_1;
@@ -183,7 +185,7 @@ void Usart2Init(uint32_t bound)
 	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
 		
 	USART_Cmd(USART2, ENABLE);
-	/*
+	*/
     GPIO_InitTypeDef GPIO_InitStructure;
     NVIC_InitTypeDef NVIC_InitStructure;
     USART_InitTypeDef USART_InitStructure;
@@ -225,7 +227,7 @@ void Usart2Init(uint32_t bound)
     USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
     // Enable USART2
     USART_Cmd(USART2, ENABLE);
-	*/
+	
 }
 
 volatile void xUSART2_IRQHandler(void)
@@ -242,11 +244,16 @@ volatile void xUSART2_IRQHandler(void)
 	static sint32_t u32CurrentSockId = -1;
 	uint32_t u32Tmp = 0;
 	
-	if(USART_GetITStatus(USART1, USART_IT_RXNE) == RESET) {
+	// uputs(USART_TERMINAL, "u2\r\n");
+	if(USART_GetITStatus(USART_WIFI, USART_IT_RXNE) == RESET) {
 		return;
 	}
-	
 	RxData = USART_RECEIVE(USART_WIFI, RxData);
+	// i = (char)(0xFF & RxData);
+	// sprintf(u16data, "%02x ", i);
+	// uputs(USART_TERMINAL, u16data);
+	// i = 0;
+	// return;
 	
 	if(GET_WIFI_USART_STATE() == WIFI_USART_STATE_RUNNING) {
 		usart_wifi_buf[Index++] = (uint8_t)RxData;
@@ -463,7 +470,7 @@ volatile void xUSART2_IRQHandler(void)
 			Index = 0;
 			return;
 		}
-		WifiRecvFlag = 0;
+		// WifiRecvFlag = 0;
 		// END TERMINAL PACKET
 		if(Index >= WIFI_MSG_OK_TERMINATOR_SIZE) {
 			if( usart_wifi_buf[Index-1] == '\n'	&& 
@@ -541,176 +548,6 @@ volatile void vUARTInterruptHandler( void )
 	}
 	USART_RECEIVE(USART1, RxData);
 	xxx = (sint8_t)RxData;
-
-	
-	/*
-	if(StartReceiveFlag) {
-		RxData = USART_RECEIVE(USART_WIFI, RxData);
-		usart_wifi_buf[Index++] = (uint8_t)RxData;
-		if(Index >= WIFI_BUF_SIZE - 1) {
-			StartReceiveFlag = 0;
-			IPDState = IPD_STATE_START_PROBE;
-			usart_wifi_buf[WIFI_BUF_SIZE-1] = '\0';
-			Index = 0;
-			return;
-		}
-		// OTHER COMMAND
-		if(StartAcceptFlag) {
-			if(Index >= sizeof("0,CONNECT") - 1) {
-				if(strncmp(usart_wifi_buf, "0,CONNECT", sizeof("0,CONNECT")-1) == 0) {
-					StartAcceptFlag = 0;
-				}
-			}
-		}
-		
-		// IDP PACKET
-		switch(IPDState) {
-			case IPD_STATE_START_PROBE:
-				if('+' == usart_wifi_buf[0]) {
-					IPDState = IPD_STATE_HANDLE_HEADER;
-				}
-				break;
-				// Not return, 
-				// because we don't know whether it's an another packet type
-			case IPD_STATE_HANDLE_HEADER:
-				if( Index >= 4) {
-					if (usart_wifi_buf[0] == '+' && 
-						usart_wifi_buf[1] == 'I' && 
-						usart_wifi_buf[2] == 'P' && 
-						usart_wifi_buf[3] == 'D' 	) {
-							IPDState = IPD_STATE_HANDLE_SOCKET_ID;
-						} else {
-							IPDState = IPD_STATE_START_PROBE;
-						}
-				}
-				// Not return, 
-				// because we don't know whether it's an another packet type
-				break;
-			case IPD_STATE_HANDLE_SOCKET_ID:
-				if(Index <= 4) {
-					// retrive the previous state
-					IPDState = IPD_STATE_START_PROBE;
-					break;
-				}
-				FirstComma = 0;
-				SecondComma = 0;
-				for(i = 4; i < Index; i++) {
-					if(',' == usart_wifi_buf[i] && 0 == FirstComma) {
-						FirstComma = i;
-					}
-					else if(',' == usart_wifi_buf[i] && FirstComma != 0) {
-						SecondComma = i;
-						break;
-					}
-				}
-				if(0 == FirstComma || 0 == SecondComma) {
-					return;
-				}
-				u32Tmp = SecondComma-FirstComma-1; // number of digit
-				if(u32Tmp> NUM_ASCII_SIZE - 1) {  // "-1" for '\0'
-					IPDState = IPD_STATE_START_PROBE;
-					break;
-				}
-				memcpy((void *)IPDNum, (void *)usart_wifi_buf[FirstComma+1], u32Tmp);
-				IPDNum[u32Tmp] = '\0';
-				u32Tmp = atoi(IPDNum);
-				if(u32Tmp < 0 || u32Tmp > 4) {
-					// out of range
-					IPDState = IPD_STATE_START_PROBE;
-					break;
-				}
-				u16SocketID = u32Tmp;
-				IPDState = IPD_STATE_HANDLE_SIZE;
-				return;
-				break; // never come here
-			case IPD_STATE_HANDLE_SIZE:
-				Colon = 0;
-				SecondComma = 0;
-				for(i = Index - 1; i > 4; i--) {
-					if(';' == usart_wifi_buf[i] && 0 == Colon) {
-						Colon = i;
-					}
-					else if(',' == usart_wifi_buf[i] && Colon != 0) {
-						SecondComma = i;
-						break;
-					}
-				}
-				if(0 == Colon || 0 == SecondComma) {
-					return;
-				}
-				u32Tmp = Colon - SecondComma - 1; // number of digit
-				if(u32Tmp> NUM_ASCII_SIZE - 1) {  // "-1" for '\0'
-					IPDState = IPD_STATE_START_PROBE;
-					break;
-				}
-				memcpy((void *)IPDNum, (void *)&usart_wifi_buf[SecondComma+1], u32Tmp);
-				IPDNum[u32Tmp] = '\0';
-				u32Tmp = atoi(IPDNum);
-				if(u32Tmp > 5000) {  // max msg size 5000(temporarily 5000)
-					// out of range
-					IPDState = IPD_STATE_START_PROBE;
-					break;
-				}
-				u16PackSize = u32Tmp;
-				IPDState = IPD_STATE_HANDLE_CONTENT;
-				return;
-				break; // never come here
-			case IPD_STATE_HANDLE_CONTENT:
-				if(Index > Colon + u16PackSize) {
-					IPDState = IPD_STATE_COMPLETED;
-				} else {
-					return;
-					break; // never come here
-				}
-				// no break here
-			case IPD_STATE_COMPLETED:
-				// TODO:
-				// there maybe \r\n left;
-				if(u16PackSize > SOCKET_BUF_SIZE) {
-					// IPDState = IPD_STATE_START_PROBE;
-				} else if(u16SocketID > 4) {
-					// IPDState = IPD_STATE_START_PROBE;
-				} else {
-					memcpy(sock_data[u16SocketID].buf, &usart_wifi_buf[Colon+1], u16PackSize);
-				}
-				IPDState = IPD_STATE_START_PROBE;
-				return;
-			default:
-				IPDState = IPD_STATE_START_PROBE;
-				break;
-		}
-
-		// END TERMINAL PACKET
-		if(Index > 2) {
-			if( usart_wifi_buf[Index-1] == 'K' && 
-				usart_wifi_buf[Index-2] == 'O'	) 
-			{
-					usart_wifi_buf[Index] = '\0';
-					StartReceiveFlag = 0;
-					Index = 0;
-					return;
-			}
-		}
-		if(Index > 5) {
-			if( usart_wifi_buf[Index-1] == 'R' && 
-				usart_wifi_buf[Index-2] == 'O' && 
-				usart_wifi_buf[Index-3] == 'R' && 
-				usart_wifi_buf[Index-4] == 'R' && 
-				usart_wifi_buf[Index-5] == 'E' 	) {
-					
-					usart_wifi_buf[Index] = '\0';
-					StartReceiveFlag = 0;
-					Index = 0;
-					return;
-				}
-		}
-		
-	} else
-	{
-		RxData = USART_RECEIVE(USART_WIFI, RxData);
-		return;
-	}
-	*/
 }
 
 sint32_t uputs(USART_TypeDef * usart, sint8_t * str)
@@ -724,9 +561,12 @@ sint32_t uputs(USART_TypeDef * usart, sint8_t * str)
 	do {
 		// 检测发送完成TC标志。
 		// 为了提高函数效率，此处没有使用库函数USART_GetITStatus
-		while((USART1->SR&0X40)==0)
-			;
-		USART_SEND(usart, *str++);
+		// while((usart->SR&0X40)==0)
+		//	;
+		// USART_SEND(usart, *str++);
+		USART_SendData(usart,*str++);
+		//delay_ms(1);
+		while(USART_GetFlagStatus(usart,USART_FLAG_TC)!=SET);//等待发送结束
 	}while('\0' != *str);
 	
 	return 0;
@@ -762,6 +602,8 @@ void vLedTask(void *pvParameters)
 			init = 0;
 			sprintf(msg, "Ansersion: %c\r\n", xxx);
 			uputs(USART1, msg);
+			// sprintf(msg, "Ansersion2: %c\r\n", xxx);
+			// uputs(USART2, msg);
 		}
 		
 	}
@@ -771,7 +613,7 @@ sint32_t BC_WifiInit(void)
 {
 	int i = 0;
 	char * str_pos = NULL;
-	TickType_t delay_time_ms = 50;
+	TickType_t delay_time_ms = 2000;
 	uint8_t * tmp_ptr = NULL;
 	
 	// StartAcceptFlag = 0;
@@ -794,24 +636,42 @@ sint32_t BC_WifiInit(void)
 	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
 		uputs(USART_WIFI, "AT+CWMODE=1\r\n");
 		vTaskDelay(delay_time_ms);
+		uputs(USART_TERMINAL, "\r\n");
+		uputs(USART_TERMINAL, usart_wifi_buf);
+		uputs(USART_TERMINAL, "\r\n");
+		
 		uputs(USART_TERMINAL, "AT+CWMODE=1...\r\n");
 	}
 	uputs(USART_TERMINAL, "AT+CWMODE=1: OK\r\n");
+	memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
+	WifiRecvFlag = 0;
 	
 	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
 		uputs(USART_WIFI, "AT+RST\r\n");
 		vTaskDelay(delay_time_ms);
+		sprintf(msg, "WifiRecvFlag: %02x\r\n", WifiRecvFlag);
+		uputs(USART_TERMINAL, msg);
+		uputs(USART_TERMINAL, usart_wifi_buf);
+		usart_wifi_buf[0] = '\0';
 		uputs(USART_TERMINAL, "AT+RST...\r\n");
 	}
 	uputs(USART_TERMINAL, "AT+RST: OK\r\n");
+	memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
+	WifiRecvFlag = 0;
 
 	// SER WIFI SSID AND PASSWORD
 	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
-		uputs(USART_WIFI, "AT+CWJAP=\"hb402-hb\",\"68704824\"\r\n");
+		uputs(USART_WIFI, "AT+CWJAP=\"hb402-2g\",\"68704824\"\r\n");
 		vTaskDelay(delay_time_ms);
-		uputs(USART_TERMINAL, "AT+CWJAP=\"hb402-hb\",\"68704824\"...\r\n");
+		sprintf(msg, "WifiRecvFlag: %02x\r\n", WifiRecvFlag);
+		uputs(USART_TERMINAL, msg);
+		uputs(USART_TERMINAL, usart_wifi_buf);
+		usart_wifi_buf[0] = '\0';
+		uputs(USART_TERMINAL, "AT+CWJAP=\"hb402-2g\",\"68704824\"...\r\n");
 	}
-	uputs(USART_TERMINAL, "AT+CWJAP=\"hb402-hb\",\"68704824\": OK\r\n");
+	uputs(USART_TERMINAL, "AT+CWJAP=\"hb402-2g\",\"68704824\": OK\r\n");
+	memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
+	WifiRecvFlag = 0;
 	
 	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
 		uputs(USART_WIFI, "AT+CIPMUX=1\r\n");
@@ -819,6 +679,8 @@ sint32_t BC_WifiInit(void)
 		uputs(USART_TERMINAL, "AT+CIPMUX=1...\r\n");
 	}
 	uputs(USART_TERMINAL, "AT+CIPMUX=1: OK\r\n");
+	memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
+	WifiRecvFlag = 0;
 	
 	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
 		sprintf(msg, "AT+CIPSERVER=1,%d\r\n", BC_CENTER_SERV_PORT);
@@ -829,6 +691,8 @@ sint32_t BC_WifiInit(void)
 	}
 	sprintf(msg, "AT+CIPSERVER=1,%d: OK\r\n", BC_CENTER_SERV_PORT);
 	uputs(USART_TERMINAL, msg);
+	memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
+	WifiRecvFlag = 0;
 	
 	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
 		uputs(USART_WIFI, "AT+CIFSR\r\n");
@@ -836,16 +700,20 @@ sint32_t BC_WifiInit(void)
 		uputs(USART_TERMINAL, "AT+CIFSR\r\n");
 	}
 	uputs(USART_TERMINAL, "AT+CIFSR: OK\r\n");
+	// memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
+	WifiRecvFlag = 0;
 
 	tmp_ptr = usart_wifi_buf;
-	str_pos = strstr(tmp_ptr, "STAIP,");
-	if(!str_pos) {
+	tmp_ptr = strstr(tmp_ptr, "STAIP,");
+	if(!tmp_ptr) {
 		uputs(USART_TERMINAL, "Parse IP: Error\r\n");
 		return -2;
 	}
 	tmp_ptr += strlen("STAIP,");
-	tmp_ptr += 1; // at position of "
+	// tmp_ptr += 1; // at position of "
 	tmp_ptr += 1; // at the first number 
+	uputs(USART_TERMINAL, tmp_ptr);
+	uputs(USART_TERMINAL, "\r\n");
 	memset(INADDR_ANY, 0, 16);
 	for(i = 0; i < 16;i++) {
 		if('.' == tmp_ptr[i] || isdigit(tmp_ptr[i])) {
