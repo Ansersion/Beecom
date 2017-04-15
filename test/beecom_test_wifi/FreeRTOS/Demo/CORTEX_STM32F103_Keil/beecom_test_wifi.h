@@ -56,9 +56,14 @@ enum IPD_STATE {
 sint32_t BC_Atoi(char n);
 
 void LedInit(void);
-
 void Usart1Init(uint32_t boundrate);
 void Usart2Init(uint32_t boundrate);
+void BufInit(void);
+void SocketInit(void);
+sint32_t BC_QueueInit(void);
+sint32_t BC_MutexInit(void);
+sint32_t BC_Init(void);
+
 
 volatile void NMI_Handler(void);
 volatile void HardFault_Handler(void);
@@ -74,6 +79,8 @@ volatile void xUSART2_IRQHandler(void);
 // in stm32f10x_it.h
 // void USART2_IRQHandler(void);
 
+
+
 // Led Test Task
 void vLedTask(void *pvParameters);
 void vTcpServerTask(void *pvParameters);
@@ -82,7 +89,9 @@ void vTcpServerTask(void *pvParameters);
 sint32_t uputs(USART_TypeDef * usart, sint8_t * str);
 
 sint32_t BC_WifiInit(void);
-sint32_t BC_CreateQueue(void);
+
+
+sint32_t BC_WifiSetMode(uint32_t mode);
 
 // wifi APIs
 // They are similar to linux socket

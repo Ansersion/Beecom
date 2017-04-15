@@ -8,6 +8,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "semphr.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -43,6 +44,9 @@ sint8_t xxx;
 sint8_t msg[256];
 uint8_t u16data[32];
 
+xSemaphoreHandle xMutexWifiStateFlag = NULL;
+xSemaphoreHandle xMutexRecvFlag = NULL;
+
 #define WIFI_BUF_SIZE 	4096
 uint8_t usart_wifi_buf[WIFI_BUF_SIZE];
 
@@ -67,6 +71,35 @@ static QueueHandle_t xQueue1 = NULL;
 static QueueHandle_t xQueue2 = NULL;
 static QueueHandle_t xQueue3 = NULL;
 static QueueHandle_t xQueue4 = NULL;
+
+// 
+sint32_t BC_Init(void)
+{
+	TickType_t delay_ms = 50;
+
+	// Led indication initialization
+	LedInit();
+	// USART_TERMINAL initialization
+	Usart1Init(9600); 
+	// USART_WIFI initialization
+	Usart2Init(115200);
+	// Buffer initialization
+	BufInit();
+	// Socket buffer initialization
+	SocketInit();
+		
+	if(BC_QueueInit() != BC_OK) {
+		sprintf(msg, "QueueInit Error!\r\n");
+		uputs(USART_TERMINAL, msg);
+		return BC_ERR;
+	}
+	if(BC_MutexInit() != BC_OK) {
+		sprintf(msg, "MutexInit Error!\r\n");
+		uputs(USART_TERMINAL, msg);
+		return BC_ERR;
+	}
+	return BC_OK;
+}
 
 sint32_t BC_Atoi(char n)
 {
@@ -143,49 +176,7 @@ void Usart1Init(uint32_t bound)
 
 void Usart2Init(uint32_t bound)
 {
-	/*
-	USART_InitTypeDef USART_InitStructure;
-	GPIO_InitTypeDef GPIO_InitStructure; 
-	NVIC_InitTypeDef NVIC_InitStructure;
-	
-	// Enable GPIO clock
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
-	
-	// USART clock
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE); 
 
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2; 
-	GPIO_Init(GPIOA,&GPIO_InitStructure); 
-
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3; 
-	GPIO_Init(GPIOA,&GPIO_InitStructure); 
-	
-	USART_DeInit(USART2);
-	
-	// Usart init£¬9600£¬8bit data bit,1 stop bit, No Parity and flow control, rx tx enable
-	USART_InitStructure.USART_BaudRate               = bound;
-	USART_InitStructure.USART_WordLength             = USART_WordLength_8b;
-	USART_InitStructure.USART_StopBits               = USART_StopBits_1;
-	USART_InitStructure.USART_Parity                 = USART_Parity_No;
-	USART_InitStructure.USART_HardwareFlowControl    = USART_HardwareFlowControl_None;
-	USART_InitStructure.USART_Mode                   = USART_Mode_Rx | USART_Mode_Tx;
-	USART_Init(USART2, &USART_InitStructure);
-	
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); 
-
-	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQChannel;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStructure);
-	
-	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
-		
-	USART_Cmd(USART2, ENABLE);
-	*/
     GPIO_InitTypeDef GPIO_InitStructure;
     NVIC_InitTypeDef NVIC_InitStructure;
     USART_InitTypeDef USART_InitStructure;
@@ -228,6 +219,54 @@ void Usart2Init(uint32_t bound)
     // Enable USART2
     USART_Cmd(USART2, ENABLE);
 	
+}
+
+void BufInit(void)
+{
+	memset(IPDNum, 0, sizeof(IPDNum));
+	memset(INADDR_ANY, 0, sizeof(INADDR_ANY));
+	memset(msg, 0, sizeof(msg));
+	memset(u16data, 0, sizeof(u16data));
+	memset(usart_wifi_buf, 0, sizeof(usart_wifi_buf));
+	memset(SrvBuf, 0, sizeof(SrvBuf));
+}
+
+void SocketInit(void)
+{
+	uint32_t i;
+	
+	// BC_MAX_SOCKET_NUM == 5;
+	for(i = 0; i < BC_MAX_SOCKET_NUM; i++) {
+		memset(&sock_data[i], 0, sizeof(BC_SocketData));
+	}
+	sock_data[0].buf = SockBuf_0;
+	sock_data[1].buf = SockBuf_1;
+	sock_data[2].buf = SockBuf_2;
+	sock_data[3].buf = SockBuf_3;
+	sock_data[4].buf = SockBuf_4;
+}
+
+sint32_t BC_QueueInit(void)
+{
+	sint32_t result = BC_OK;
+	
+	if(!(xQueue0 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	if(!(xQueue1 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	if(!(xQueue2 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	if(!(xQueue3 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	if(!(xQueue4 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	
+	return result;
+}
+
+sint32_t BC_MutexInit(void)
+{
+	sint32_t result = BC_OK;
+	
+	if(!(xMutexWifiStateFlag = xSemaphoreCreateBinary())) 	result |= BC_ERR;
+	if(!(xMutexRecvFlag = xSemaphoreCreateBinary())) 		result |= BC_ERR;
+	
+	return result;
 }
 
 volatile void xUSART2_IRQHandler(void)
@@ -618,20 +657,6 @@ sint32_t BC_WifiInit(void)
 	
 	// StartAcceptFlag = 0;
 	// StartReceiveFlag = 0;
-	
-	if(BC_CreateQueue() != BC_OK) {
-		uputs(USART_TERMINAL, "BC_CreateQueue: Error\r\n");
-		return -1;
-	}
-	
-	for(i = 0; i < BC_MAX_SOCKET_NUM; i++) {
-		memset(&sock_data[i], 0, sizeof(BC_SocketData));
-	}
-	sock_data[0].buf = SockBuf_0;
-	sock_data[1].buf = SockBuf_1;
-	sock_data[2].buf = SockBuf_2;
-	sock_data[3].buf = SockBuf_3;
-	sock_data[4].buf = SockBuf_4;
 
 	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
 		uputs(USART_WIFI, "AT+CWMODE=1\r\n");
@@ -729,18 +754,6 @@ sint32_t BC_WifiInit(void)
 	return 0;
 }
 
-sint32_t BC_CreateQueue(void)
-{
-	sint32_t result = BC_OK;
-	
-	if(!(xQueue0 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
-	if(!(xQueue1 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
-	if(!(xQueue2 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
-	if(!(xQueue3 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
-	if(!(xQueue4 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
-	
-	return result;
-}
 
 void vTcpServerTask(void *pvParameters)
 {

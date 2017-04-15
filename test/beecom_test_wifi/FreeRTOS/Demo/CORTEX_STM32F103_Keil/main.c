@@ -241,11 +241,12 @@ int main( void )
     // xTaskCreate( vCheckTask, "Check", mainCHECK_TASK_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY, NULL );
 	// xTaskCreate( vLCDTask, "LCD", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
 	
-	LedInit();
-	Usart1Init(9600);
+	// LedInit();
+	// Usart1Init(9600);
 	// Wifi initialization
-	Usart2Init(115200);
+	// Usart2Init(115200);
 	// BC_WifiInit();
+	BC_Init();
 	
 	xTaskCreate( vLedTask, "LED_TEST", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+4, NULL );
 	/* The suicide tasks must be created last as they need to know how many
