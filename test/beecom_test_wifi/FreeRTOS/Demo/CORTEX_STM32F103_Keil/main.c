@@ -249,6 +249,7 @@ int main( void )
 	BC_Init();
 	
 	xTaskCreate( vLedTask, "LED_TEST", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+4, NULL );
+	// xTaskCreate( vTcpServerTask, "SERVER_TEST", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+4, NULL);
 	/* The suicide tasks must be created last as they need to know how many
 	tasks were running prior to their creation in order to ascertain whether
 	or not the correct/expected number of tasks are running at any given time. */

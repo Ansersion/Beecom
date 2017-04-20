@@ -33,6 +33,19 @@
 #define NUM_ASCII_SIZE 	6
 uint8_t IPDNum[NUM_ASCII_SIZE];
 
+uint8_t WIFI_FLAG_OK_END[] = "OK\r\n";
+uint32_t WIFI_FLAG_OK_END_SIZE = sizeof(WIFI_FLAG_OK_END) - 1;
+uint8_t WIFI_FLAG_ERROR_END[] = "ERROR\r\n";
+uint32_t WIFI_FLAG_ERROR_END_SIZE = sizeof(WIFI_FLAG_ERROR_END) - 1;
+uint8_t WIFI_FLAG_CONN_END[] = "CONNECT\r\n";
+uint32_t WIFI_FLAG_CONN_END_SIZE = sizeof(WIFI_FLAG_CONN_END) - 1;
+uint8_t WIFI_FLAG_CLOSED_END[] = "CLOSED\r\n";
+uint32_t WIFI_FLAG_CLOSED_END_SIZE = sizeof(WIFI_FLAG_CLOSED_END) - 1;
+uint8_t WIFI_FLAG_STATUS_END[] = "+CIPSTATUS";
+uint32_t WIFI_FLAG_STATUS_END_SIZE = sizeof(WIFI_FLAG_STATUS_END) - 1;
+
+uint8_t WIFI_FLAG_IPD_ST[] = "+IPD";
+uint32_t WIFI_FLAG_IPD_ST_SIZE = sizeof(WIFI_FLAG_IPD_ST) - 1;
 // TODO
 uint8_t INADDR_ANY[16];
 uint32_t StartReceiveFlag = 0;
@@ -75,7 +88,8 @@ static QueueHandle_t xQueue4 = NULL;
 // 
 sint32_t BC_Init(void)
 {
-	TickType_t delay_ms = 50;
+	// TickType_t delay_ms = 50;
+	int i = 0;
 
 	// Led indication initialization
 	LedInit();
@@ -87,25 +101,23 @@ sint32_t BC_Init(void)
 	BufInit();
 	// Socket buffer initialization
 	SocketInit();
-		
+
 	if(BC_QueueInit() != BC_OK) {
-		sprintf(msg, "QueueInit Error!\r\n");
-		uputs(USART_TERMINAL, msg);
+		while(1) {
+			for(i = 0; i < 100000; i++) {
+				sprintf(msg, "QueueInit Error!\r\n");
+				uputs(USART_TERMINAL, msg);
+			}
+		}
 		return BC_ERR;
 	}
-	if(BC_MutexInit() != BC_OK) {
-		sprintf(msg, "MutexInit Error!\r\n");
-		uputs(USART_TERMINAL, msg);
-		return BC_ERR;
-	}
+	// if(BC_MutexInit() != BC_OK) {
+	// 	sprintf(msg, "MutexInit Error!\r\n");
+	// 	uputs(USART_TERMINAL, msg);
+	// 	return BC_ERR;
+	// }
 	return BC_OK;
 }
-
-sint32_t BC_Atoi(char n)
-{
-	return n - '0';
-}
-
 
 void LedInit(void)
 {		
@@ -250,11 +262,11 @@ sint32_t BC_QueueInit(void)
 {
 	sint32_t result = BC_OK;
 	
-	if(!(xQueue0 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
-	if(!(xQueue1 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
-	if(!(xQueue2 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
-	if(!(xQueue3 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
-	if(!(xQueue4 = xQueueCreate(1, sizeof(BC_SocketData)))) result |= BC_ERR;
+	if(!(xQueue0 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
+	if(!(xQueue1 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
+	if(!(xQueue2 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
+	if(!(xQueue3 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
+	if(!(xQueue4 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
 	
 	return result;
 }
@@ -262,10 +274,39 @@ sint32_t BC_QueueInit(void)
 sint32_t BC_MutexInit(void)
 {
 	sint32_t result = BC_OK;
+	sint32_t f = 0;
+	int i;
 	
-	if(!(xMutexWifiStateFlag = xSemaphoreCreateBinary())) 	result |= BC_ERR;
-	if(!(xMutexRecvFlag = xSemaphoreCreateBinary())) 		result |= BC_ERR;
-	
+	if(!(xMutexWifiStateFlag = xSemaphoreCreateBinary())) 	result = BC_ERR;
+	// if(result != BC_OK) {
+	// 	while(1) {
+	// 		for(i=0; i < 10000; i++)
+	// 			;
+	// 		sprintf(msg, "MutexInit Error1\r\n");
+	// 		uputs(USART_TERMINAL, msg);
+	// 	}
+
+	// }
+	if(!(xMutexRecvFlag = xSemaphoreCreateBinary())) 		result = BC_ERR;
+	if(result != BC_OK) {
+		while(1) {
+			for(i=0; i < 10000; i++)
+				;
+			sprintf(msg, "MutexInit Error2\r\n");
+			uputs(USART_TERMINAL, msg);
+		}
+
+	}
+	f = SET_START_RECV_FLAG(WIFI_USART_STATE_INIT);
+	if(f < 0) {
+		while(1) {
+			for(i=0; i < 10000; i++)
+				;
+			sprintf(msg, "MutexInit Error3:%d\r\n", f);
+			uputs(USART_TERMINAL, msg);
+		}
+	}
+
 	return result;
 }
 
@@ -274,16 +315,15 @@ volatile void xUSART2_IRQHandler(void)
 	static uint32_t Index = 0;
 	static uint16_t u16PackSize = 0;
 	static uint32_t IPDState = IPD_STATE_START_PROBE;
-	// static uint32_t 
 	static uint16_t num = 0;
 	static uint8_t i = 0;
 	static uint16_t FirstComma = 0, SecondComma = 0, Colon = 0;
 	static uint16_t RxData=0;
 	static uint16_t u16SocketID = 0;
 	static sint32_t u32CurrentSockId = -1;
+	static uint32_t StartRecvFlagTmp = 0;
 	uint32_t u32Tmp = 0;
 	
-	// uputs(USART_TERMINAL, "u2\r\n");
 	if(USART_GetITStatus(USART_WIFI, USART_IT_RXNE) == RESET) {
 		return;
 	}
@@ -293,6 +333,9 @@ volatile void xUSART2_IRQHandler(void)
 	// uputs(USART_TERMINAL, u16data);
 	// i = 0;
 	// return;
+	// if(GET_START_RECV_FLAG_ISR(&StartRecvFlagTmp) < 0) {
+	// 	return;
+	// }
 	
 	if(GET_WIFI_USART_STATE() == WIFI_USART_STATE_RUNNING) {
 		usart_wifi_buf[Index++] = (uint8_t)RxData;
@@ -314,15 +357,8 @@ volatile void xUSART2_IRQHandler(void)
 				// Not return, 
 				// because we don't know whether it's an another packet type
 			case IPD_STATE_HANDLE_HEADER:
-				if( Index >= 4) {
-					if (usart_wifi_buf[0] == '+' && 
-						usart_wifi_buf[1] == 'I' && 
-						usart_wifi_buf[2] == 'P' && 
-						usart_wifi_buf[3] == 'D' 	) {
-							IPDState = IPD_STATE_HANDLE_SOCKET_ID;
-						} else {
-							IPDState = IPD_STATE_START_PROBE;
-						}
+				if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_IPD_ST, WIFI_FLAG_IPD_ST_SIZE, FALSE)) {
+					IPDState = IPD_STATE_HANDLE_SOCKET_ID;
 				}
 				// Not return, 
 				// because we don't know whether it's an another packet type
@@ -429,75 +465,31 @@ volatile void xUSART2_IRQHandler(void)
 		if(Index >= 1) {
 			if(isdigit(usart_wifi_buf[0])) {
 				u32CurrentSockId = BC_Atoi(usart_wifi_buf[0]);
-				if(Index >= WIFI_MSG_CONNECT_TERMINATOR_SIZE) {
-					if( usart_wifi_buf[Index-1] == '\n'	&& 
-						usart_wifi_buf[Index-2] == '\r'	&&
-						usart_wifi_buf[Index-3] == 'T' 	&&
-						usart_wifi_buf[Index-4] == 'C' 	&&
-						usart_wifi_buf[Index-5] == 'E' 	&&	
-						usart_wifi_buf[Index-6] == 'N' 	&&
-						usart_wifi_buf[Index-7] == 'N' 	&&
-						usart_wifi_buf[Index-8] == 'O' 	&&
-						usart_wifi_buf[Index-9] == 'C' 	) {
-							sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CONNECT;
-							return;
-						}							
+				if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_CONN_END, WIFI_FLAG_CONN_END_SIZE, TRUE)) {
+					sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CONNECT;
+					return;
 				}
-				if(Index >= WIFI_MSG_CLOSED_TERMINATOR_SIZE) {
-					if( usart_wifi_buf[Index-1] == '\n'	&& 
-						usart_wifi_buf[Index-2] == '\r'	&&
-						usart_wifi_buf[Index-3] == 'D' 	&&
-						usart_wifi_buf[Index-4] == 'E' 	&&	
-						usart_wifi_buf[Index-5] == 'S' 	&&
-						usart_wifi_buf[Index-6] == 'O' 	&&
-						usart_wifi_buf[Index-7] == 'L' 	&&
-						usart_wifi_buf[Index-8] == 'C' 	) {
-							sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
-							return;
-						}							
+				if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_CONN_END, WIFI_FLAG_CONN_END_SIZE, TRUE)) {
+					sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
+					return;
 				}
 			}
 		}
-		if(Index >= 10) {
-			if( usart_wifi_buf[Index-1] == 'S'	&& 
-				usart_wifi_buf[Index-2] == 'U'	&&
-				usart_wifi_buf[Index-3] == 'T' 	&&
-				usart_wifi_buf[Index-4] == 'A' 	&&
-				usart_wifi_buf[Index-5] == 'T' 	&&	
-				usart_wifi_buf[Index-6] == 'S' 	&&
-				usart_wifi_buf[Index-7] == 'P' 	&&
-				usart_wifi_buf[Index-8] == 'I' 	&&
-				usart_wifi_buf[Index-9] == 'C' 	&& 
-				usart_wifi_buf[Index-10] =='+' 	) {
-				}	
+
+		if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_STATUS_END, WIFI_FLAG_STATUS_END_SIZE, TRUE)) {
 		}
-		// END TERMINAL PACKET
-		if(Index >= WIFI_MSG_OK_TERMINATOR_SIZE) {
-			if( usart_wifi_buf[Index-1] == '\n'	&& 
-				usart_wifi_buf[Index-2] == '\r'	&&
-				usart_wifi_buf[Index-3] == 'K' 	&&
-				usart_wifi_buf[Index-4] == 'O' 	) 
-			{
-					usart_wifi_buf[Index] = '\0';
-					WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
-					Index = 0;
-					return;
-			}
+
+		if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_OK_END, WIFI_FLAG_OK_END_SIZE, TRUE)) {
+			usart_wifi_buf[Index] = '\0';
+			WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
+			Index = 0;
+			return;
 		}
-		if(Index >= WIFI_MSG_ERR_TERMINATOR_SIZE) {
-			if( usart_wifi_buf[Index-1] == '\n'	&& 
-				usart_wifi_buf[Index-2] == '\r'	&&
-				usart_wifi_buf[Index-3] == 'R' 	&&
-				usart_wifi_buf[Index-4] == 'O' 	&&
-				usart_wifi_buf[Index-5] == 'R' 	&&
-				usart_wifi_buf[Index-6] == 'R' 	&&
-				usart_wifi_buf[Index-7] == 'E' 	) 
-			{
-					usart_wifi_buf[Index] = '\0';
-					WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_ERR;
-					Index = 0;
-					return;
-			}
+		if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_ERROR_END, WIFI_FLAG_ERROR_END_SIZE, TRUE)) {
+			usart_wifi_buf[Index] = '\0';
+			WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_ERR;
+			Index = 0;
+			return;
 		}
 	} else if(GET_WIFI_USART_STATE() == WIFI_USART_STATE_INIT) {
 		usart_wifi_buf[Index++] = (uint8_t)RxData;
@@ -511,34 +503,18 @@ volatile void xUSART2_IRQHandler(void)
 		}
 		// WifiRecvFlag = 0;
 		// END TERMINAL PACKET
-		if(Index >= WIFI_MSG_OK_TERMINATOR_SIZE) {
-			if( usart_wifi_buf[Index-1] == '\n'	&& 
-				usart_wifi_buf[Index-2] == '\r'	&&
-				usart_wifi_buf[Index-3] == 'K' 	&&
-				usart_wifi_buf[Index-4] == 'O' 	) 
-			{
-					usart_wifi_buf[Index] = '\0';
-					WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
-					Index = 0;
-					return;
-			}
+		if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_OK_END, WIFI_FLAG_OK_END_SIZE, TRUE)) {
+			usart_wifi_buf[Index] = '\0';
+			WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
+			Index = 0;
+			return;
 		}
-		if(Index >= WIFI_MSG_ERR_TERMINATOR_SIZE) {
-			if( usart_wifi_buf[Index-1] == '\n'	&& 
-				usart_wifi_buf[Index-2] == '\r'	&&
-				usart_wifi_buf[Index-3] == 'R' 	&&
-				usart_wifi_buf[Index-4] == 'O' 	&&
-				usart_wifi_buf[Index-5] == 'R' 	&&
-				usart_wifi_buf[Index-6] == 'R' 	&&
-				usart_wifi_buf[Index-7] == 'E' 	) 
-			{
-					usart_wifi_buf[Index] = '\0';
-					WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_ERR;
-					Index = 0;
-					return;
-			}
+		if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_ERROR_END, WIFI_FLAG_ERROR_END_SIZE, TRUE)) {
+			usart_wifi_buf[Index] = '\0';
+			WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_ERR;
+			Index = 0;
+			return;
 		}
-		
 	}
 	return;
 }
@@ -635,6 +611,8 @@ void vLedTask(void *pvParameters)
 				uputs(USART1, "Start WifiInit\r\n");
 				BC_WifiInit();
 			}
+			vTaskDelay(ms);
+			vTaskDelay(ms);
 			uputs(USART1, INADDR_ANY);
 			uputs(USART1, "\r\n");
 		} else {
@@ -659,19 +637,6 @@ sint32_t BC_WifiInit(void)
 	// StartReceiveFlag = 0;
 
 	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
-		uputs(USART_WIFI, "AT+CWMODE=1\r\n");
-		vTaskDelay(delay_time_ms);
-		uputs(USART_TERMINAL, "\r\n");
-		uputs(USART_TERMINAL, usart_wifi_buf);
-		uputs(USART_TERMINAL, "\r\n");
-		
-		uputs(USART_TERMINAL, "AT+CWMODE=1...\r\n");
-	}
-	uputs(USART_TERMINAL, "AT+CWMODE=1: OK\r\n");
-	memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
-	WifiRecvFlag = 0;
-	
-	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
 		uputs(USART_WIFI, "AT+RST\r\n");
 		vTaskDelay(delay_time_ms);
 		sprintf(msg, "WifiRecvFlag: %02x\r\n", WifiRecvFlag);
@@ -684,6 +649,19 @@ sint32_t BC_WifiInit(void)
 	memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
 	WifiRecvFlag = 0;
 
+	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
+		uputs(USART_WIFI, "AT+CWMODE=1\r\n");
+		vTaskDelay(delay_time_ms);
+		uputs(USART_TERMINAL, "\r\n");
+		uputs(USART_TERMINAL, usart_wifi_buf);
+		uputs(USART_TERMINAL, "\r\n");
+		
+		uputs(USART_TERMINAL, "AT+CWMODE=1...\r\n");
+	}
+	uputs(USART_TERMINAL, "AT+CWMODE=1: OK\r\n");
+	memset(usart_wifi_buf, 0, WIFI_BUF_SIZE);
+	WifiRecvFlag = 0;
+	
 	// SER WIFI SSID AND PASSWORD
 	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
 		uputs(USART_WIFI, "AT+CWJAP=\"hb402-2g\",\"68704824\"\r\n");
@@ -750,6 +728,7 @@ sint32_t BC_WifiInit(void)
 	INADDR_ANY[i] = '\0';
 	sprintf(msg, "My IP is %s\r\n", INADDR_ANY);
 	uputs(USART_TERMINAL, msg);
+	SET_WIFI_USART_STATE(WIFI_USART_STATE_RUNNING);
 	
 	return 0;
 }
@@ -782,7 +761,7 @@ void vTcpServerTask(void *pvParameters)
         vTaskDelete(NULL);
 		return;
     }
-	if (BC_Listen(server_socket, LISTEN_QUEUE)) {
+	if (BC_Listen(server_socket, LISTEN_QUEUE) != 0) {
         printf("Server Listen Failed!\r\n"); 
         vTaskDelete(NULL);
 		return;
@@ -858,10 +837,10 @@ sint32_t BC_Listen(sint32_t sockfd, sint32_t backlog)
 		return -3;
 	}
 	sock_data[sockfd].backlog = backlog;
-	sprintf(msg, "AT+CIPSERVER=1,%d", sock_data[sockfd].addr.sin_port);
-	uputs(USART_WIFI, msg);
+	// sprintf(msg, "AT+CIPSERVER=1,%d", sock_data[sockfd].addr.sin_port);
+	// uputs(USART_WIFI, msg);
 	sprintf(msg, "Server info: IP=%s, PORT=%d\r\n", INADDR_ANY, sock_data[sockfd].addr.sin_port);
-	uputs(USART1, msg);
+	uputs(USART_TERMINAL, msg);
 	
 	return 0;
 }
@@ -882,7 +861,8 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 	}
 	// wait for the semphore
 	
-	StartReceiveFlag = 1;
+	// StartReceiveFlag = 1;
+	SET_START_RECV_FLAG(1);
 	StartAcceptFlag = 1;
 	
 	k_cliaddr = cliaddr;
@@ -937,7 +917,8 @@ sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
 		return -3;
 	}
 	// wait semphore
-	StartReceiveFlag = 1;
+	// StartReceiveFlag = 1;
+	SET_START_RECV_FLAG(1);
 	while(StartReceiveFlag)
 		;
 	// read USART_WIFI(in ISA)
@@ -967,3 +948,106 @@ sint32_t BC_Send(sint32_t sockfd, const void * buff, uint32_t nbytes, sint32_t f
 	
 	return 0;
 }
+
+sint32_t GET_START_RECV_FLAG(uint32_t * u32F)
+{
+	if(!xMutexWifiStateFlag) {
+		return -1;
+	}
+	if(!u32F) {
+		return -2;
+	}
+	if(pdTRUE != xSemaphoreTake(xMutexWifiStateFlag, portMAX_DELAY)) {
+		return -3;
+	}
+	*u32F = StartReceiveFlag;
+	if(pdTRUE != xSemaphoreGive(xMutexWifiStateFlag)) {
+		return -4;
+	}
+	return 0;
+}
+
+sint32_t SET_START_RECV_FLAG(uint32_t u32F)
+{
+	if(!xMutexWifiStateFlag) {
+		return -1;
+	}
+	if(pdTRUE != xSemaphoreTake(xMutexWifiStateFlag, portMAX_DELAY)) {
+		return -3;
+	}
+	StartReceiveFlag = u32F;
+	if(pdTRUE != xSemaphoreGive(xMutexWifiStateFlag)) {
+		return -4;
+	}
+	return 0;
+}
+
+sint32_t GET_START_RECV_FLAG_ISR(uint32_t * u32F)
+{
+	static BaseType_t xHigherPriorityTaskWoken;
+	if(!xMutexWifiStateFlag) {
+		return -1;
+	}
+	if(!u32F) {
+		return -2;
+	}
+	if(pdTRUE != xSemaphoreTakeFromISR(xMutexWifiStateFlag, &xHigherPriorityTaskWoken)) {
+		return -3;
+	}
+	*u32F = StartReceiveFlag;
+	if(pdTRUE != xSemaphoreGiveFromISR(xMutexWifiStateFlag, &xHigherPriorityTaskWoken)) {
+		return -4;
+	}
+	return 0;
+}
+
+sint32_t SET_START_RECV_FLAG_ISR(uint32_t u32F)
+{
+	static BaseType_t xHigherPriorityTaskWoken;
+	if(!xMutexWifiStateFlag) {
+		return -1;
+	}
+	if(pdTRUE != xSemaphoreTakeFromISR(xMutexWifiStateFlag, &xHigherPriorityTaskWoken)) {
+		return -3;
+	}
+	StartReceiveFlag = u32F;
+	if(pdTRUE != xSemaphoreGiveFromISR(xMutexWifiStateFlag, &xHigherPriorityTaskWoken)) {
+		return -4;
+	}
+	return 0;
+}
+
+sint32_t BC_Atoi(char n)
+{
+	return n - '0';
+}
+
+sint32_t CheckWifiData(uint8_t * buf, uint32_t buf_size, uint8_t * flag, uint32_t flag_size, bool_t is_end_term)
+{
+	static sint32_t i = 0;
+	// static sint32_t j = 0;
+	if(buf_size < flag_size) {
+		return BC_ERR;
+	}
+	if(!buf) {
+		return BC_ERR;
+	}
+	if(!flag) {
+		return BC_ERR;
+	}
+	if(is_end_term) {
+		for(i = 0; i < flag_size; i++) {
+			if(buf[buf_size - flag_size + i] != flag[i]) {
+				return BC_ERR;
+			}
+		}
+	} else {
+		for(i = 0; i < flag_size; i++) {
+			if(buf[i] != flag[i]) {
+				return BC_ERR;
+			}
+		}
+	}
+	return BC_OK;
+}
+

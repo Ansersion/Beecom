@@ -54,6 +54,7 @@ enum IPD_STATE {
 };
 
 sint32_t BC_Atoi(char n);
+sint32_t CheckWifiData(uint8_t * buf, uint32_t buf_size, uint8_t * flag, uint32_t flag_size, bool_t is_end_term);
 
 void LedInit(void);
 void Usart1Init(uint32_t boundrate);
@@ -107,5 +108,9 @@ sint32_t BC_Close(sint32_t sockfd);
 sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags);
 sint32_t BC_Send(sint32_t sockfd, const void * buff, uint32_t nbytes, sint32_t flags);
 
+sint32_t GET_START_RECV_FLAG(uint32_t * u32F);
+sint32_t SET_START_RECV_FLAG(uint32_t u32F);
+sint32_t GET_START_RECV_FLAG_ISR(uint32_t * u32F);
+sint32_t SET_START_RECV_FLAG_ISR(uint32_t u32F);
 
 #endif
