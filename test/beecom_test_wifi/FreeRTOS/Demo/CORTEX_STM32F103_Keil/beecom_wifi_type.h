@@ -34,6 +34,8 @@ typedef struct BC_SocketData {
 	uint32_t msg_flag;
 	BC_Sockaddr addr;
 	bool_t valid;
+	bool_t is_server;
+	bool_t accepted;
 	uint8_t * buf;
 	sint32_t backlog;
 }BC_SocketData;
