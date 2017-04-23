@@ -3,6 +3,9 @@
 
 #include <beecomint.h>
 
+#include "FreeRTOS.h"
+#include "queue.h"
+
 #define AF_INET 	0
 
 #define SOCK_STREAM 	0
@@ -12,6 +15,8 @@
 
 #define BC_OK 	0
 #define BC_ERR 	1
+
+#define MAX_CLI_QUEUE 	5
 
 
 
@@ -34,10 +39,14 @@ typedef struct BC_SocketData {
 	uint32_t msg_flag;
 	BC_Sockaddr addr;
 	bool_t valid;
-	bool_t is_server;
-	bool_t accepted;
+	// bool_t is_server;
+	// bool_t accepted;
+	uint32_t wifi_recv_flag;
 	uint8_t * buf;
 	sint32_t backlog;
+	QueueHandle_t queue_handle;
+	sint32_t wifi_id;
+	sint32_t ipd_size;
 }BC_SocketData;
 
 #endif

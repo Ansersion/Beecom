@@ -67,6 +67,7 @@ xSemaphoreHandle xMutexRecvFlag = NULL;
 uint8_t usart_wifi_buf[WIFI_BUF_SIZE];
 
 uint8_t SrvBuf[TASK_BUF_SIZE]; 
+uint8_t DstBuf[TASK_BUF_SIZE];
 
 // TODO:
 // "WifiRecvFlag" need a mutex
@@ -88,6 +89,8 @@ static QueueHandle_t xQueue2 = NULL;
 static QueueHandle_t xQueue3 = NULL;
 static QueueHandle_t xQueue4 = NULL;
 
+static QueueHandle_t xQueueCli[MAX_CLI_QUEUE];
+
 // 
 sint32_t BC_Init(void)
 {
@@ -102,18 +105,19 @@ sint32_t BC_Init(void)
 	Usart2Init(115200);
 	// Buffer initialization
 	BufInit();
-	// Socket buffer initialization
-	SocketInit();
 
 	if(BC_QueueInit() != BC_OK) {
 		while(1) {
 			for(i = 0; i < 100000; i++) {
-				sprintf(msg, "QueueInit Error!\r\n");
-				uputs(USART_TERMINAL, msg);
 			}
+			sprintf(msg, "QueueInit Error!\r\n");
+			uputs(USART_TERMINAL, msg);
 		}
-		// return BC_ERR;
 	}
+
+	// Socket buffer initialization
+	SocketInit();
+
 	// if(BC_MutexInit() != BC_OK) {
 	// 	sprintf(msg, "MutexInit Error!\r\n");
 	// 	uputs(USART_TERMINAL, msg);
@@ -259,17 +263,28 @@ void SocketInit(void)
 	sock_data[2].buf = SockBuf_2;
 	sock_data[3].buf = SockBuf_3;
 	sock_data[4].buf = SockBuf_4;
+
+	sock_data[0].queue_handle = xQueue0;
+	sock_data[1].queue_handle = xQueue1;
+	sock_data[2].queue_handle = xQueue2;
+	sock_data[3].queue_handle = xQueue3;
+	sock_data[4].queue_handle = xQueue4;
 }
 
 sint32_t BC_QueueInit(void)
 {
 	sint32_t result = BC_OK;
+	uint32_t i = 0;
 	
 	if(!(xQueue0 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
 	if(!(xQueue1 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
 	if(!(xQueue2 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
 	if(!(xQueue3 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
 	if(!(xQueue4 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
+
+	for(i = 0; i < MAX_CLI_QUEUE; i++) {
+		if(!(xQueueCli[i] = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
+	}
 	
 	return result;
 }
@@ -339,7 +354,6 @@ volatile void xUSART2_IRQHandler(void)
 	}
 	if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_OK_END, WIFI_FLAG_OK_END_SIZE, TRUE)) {
 		WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
-		usart_wifi_buf[Index] = '\0';
 		Index = 0;
 		return;
 	}
@@ -369,7 +383,7 @@ volatile void xUSART2_IRQHandler(void)
 			}
 			if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_CLOSED_END, WIFI_FLAG_CLOSED_END_SIZE, TRUE)) {
 				// sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
-				WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CONNECT;
+				WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLOSED;
 				Index = 0;
 				return;
 			}
@@ -377,7 +391,6 @@ volatile void xUSART2_IRQHandler(void)
 	}
 
 	if(BC_OK == CheckWifiData(usart_wifi_buf, Index, WIFI_FLAG_STATUS_ST, WIFI_FLAG_STATUS_ST_SIZE, FALSE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_CLI) == 0) {
-		// return;
 		if(ParseCIPSTATUS(usart_wifi_buf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_data_tmp) == 0) {
 			if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data_tmp, &xHigherPriorityTaskWoken)) {
 				// sprintf(msg_irs, "STATUS QUE Err\r\n");
@@ -396,6 +409,7 @@ volatile void xUSART2_IRQHandler(void)
 				sprintf(msg_irs, "IPD QUE OK\r\n");
 				WifiRecvFlag |= WIFI_MSG_FLAG_GOT_IPD;
 			}
+			Index = 0;
 			return;
 		}
 	}
@@ -881,7 +895,9 @@ void vTcpServerTask(void *pvParameters)
 	while(TRUE) {
 		memset(&client_addr, 0, sizeof(BC_Sockaddr));
 		memset(SrvBuf, 0, TASK_BUF_SIZE);
+		memset(DstBuf, 0, TASK_BUF_SIZE);
 		client_socket = BC_Accept(server_socket, &client_addr,&addr_len);
+		WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_CLI;
         if (client_socket < 0) {
             printf("Server Accept Failed:%d\r\n", client_socket);
             break;
@@ -890,6 +906,7 @@ void vTcpServerTask(void *pvParameters)
 			printf("cli_port:%d\r\n", client_addr.sin_port);
 		}
 		trans_len = BC_Recv(client_socket, SrvBuf, TASK_BUF_SIZE, 0);
+		WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_IPD;
 		if(trans_len <= 0) {
 			printf("Server Recv Failed\r\n");
 			BC_Close(client_socket);
@@ -898,7 +915,11 @@ void vTcpServerTask(void *pvParameters)
 		printf("Recv from %s:%d\r\n", client_addr.sin_addr.s_addr, client_addr.sin_port);
 		printf("Msg: #%s#\r\n", SrvBuf);
 		printf("Echoing now...\r\n");
-		trans_len = BC_Send(client_socket, SrvBuf, TASK_BUF_SIZE, 0);
+		sprintf(DstBuf, "Echo: %s", SrvBuf);
+		trans_len = strlen(DstBuf);
+		trans_len = BC_Send(client_socket, DstBuf, trans_len, 0);
+		vTaskDelay(1000);
+		WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
 		if(trans_len < 0) {
 			printf("Server Send Failed\r\n");
 			BC_Close(client_socket);
@@ -908,6 +929,8 @@ void vTcpServerTask(void *pvParameters)
 	}
 	
 	BC_Close(server_socket);
+	vTaskDelay(500);
+	WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_CLOSED;
 	vTaskDelete(NULL);
 	return;
 }
@@ -968,7 +991,7 @@ sint32_t BC_Listen(sint32_t sockfd, sint32_t backlog)
 		uputs(USART_TERMINAL, "Error: Only sockfd(LinkNo.)==0 can be server\r\n");
 		return -5;
 	}
-	sock_data[sockfd].is_server = TRUE;
+	// sock_data[sockfd].is_server = TRUE;
 	WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
 	
 	return 0;
@@ -999,9 +1022,11 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 	}
 	uputs(USART_WIFI, "AT+CIPSTATUS\r\n");
 	while(pdFALSE == xQueueReceive(xQueue0, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
-		uputs(USART_TERMINAL, usart_wifi_buf);
+		// uputs(USART_TERMINAL, usart_wifi_buf);
 	}
 	memcpy(cliaddr, &(sock_data_tmp.addr), sizeof(BC_Sockaddr));
+	WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
+	WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
 	
 	return 0;
 }
@@ -1030,9 +1055,9 @@ sint32_t BC_Close(sint32_t sockfd)
 	if(!sock_data[sockfd].valid) {
 		return -2;
 	}
-	sprintf(msg, "AT+CIPCLOSE=%d", sockfd);
+	sprintf(msg, "AT+CIPCLOSE=%d\r\n", sockfd);
 	uputs(USART_WIFI, msg);
-	sock_data[sockfd].valid = FALSE;
+	// sock_data[sockfd].valid = FALSE;
 	return 0;
 }
 
@@ -1048,18 +1073,21 @@ sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
 	if(!sock_data[sockfd].valid) {
 		return -3;
 	}
+	sock_data_tmp.wifi_id = -1;
 	while(pdFALSE == xQueueReceive(xQueue0, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
-		printf("recv...\r\n");
+		// TODO:
+		// Judge if remote close
 	}
-	vTaskDelay(1000);
-	printf("recv: got IPD");
-	vTaskDelay(1000);
-	printf("recv: got IPD");
-	vTaskDelay(1000);
-	printf("recv: %s\r\n", sock_data_tmp.buf);
-	while(1) {
-		vTaskDelay(1000);
-	}
+	memcpy(SrvBuf, sock_data_tmp.buf, sock_data_tmp.ipd_size);
+	// vTaskDelay(1000);
+	// printf("recv: got IPD");
+	// vTaskDelay(1000);
+	printf("recv: wifi_id=%d\r\n", sock_data_tmp.wifi_id);
+	// vTaskDelay(1000);
+	// printf("recv: %s\r\n", sock_data_tmp.buf);
+	// while(1) {
+	// 	vTaskDelay(1000);
+	// }
 	// wait semphore
 	// StartReceiveFlag = 1;
 	// SET_START_RECV_FLAG(1);
@@ -1067,11 +1095,13 @@ sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
 	// 	;
 	// read USART_WIFI(in ISA)
 	// taskYIELD
-	return 0;
+	return sock_data_tmp.ipd_size;
 }
 
 sint32_t BC_Send(sint32_t sockfd, const void * buff, uint32_t nbytes, sint32_t flags)
 {
+	static sint32_t i = 0;
+	static uint8_t * buf_tmp = NULL;
 	if(!ASSERT_SOCK_VALID(sockfd)) {
 		return -1;
 	}
@@ -1084,13 +1114,18 @@ sint32_t BC_Send(sint32_t sockfd, const void * buff, uint32_t nbytes, sint32_t f
 
 	// memset(msg, 0, sizeof(msg));
 	
-	sprintf(msg, "AT+CIPSEND=0,%d", nbytes);
+	WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
+	sprintf(msg, "AT+CIPSEND=%d,%d\r\n", sockfd, nbytes);
 	uputs(USART_WIFI, msg);
-	vTaskDelay(10); // TODO
-	uputs(USART_WIFI, (sint8_t *)buff);
-	vTaskDelay(10); // TODO
+	vTaskDelay(1000); // TODO
+	WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
+	buf_tmp = (uint8_t *)buff;
+	for(i = 0; i < nbytes; i++) {
+		USART_SendData(USART_WIFI, buf_tmp[i]);
+		while(USART_GetFlagStatus(USART_WIFI,USART_FLAG_TC)!=SET);
+	}
 	
-	return 0;
+	return nbytes;
 }
 
 sint32_t GET_START_RECV_FLAG(uint32_t * u32F)
@@ -1361,6 +1396,7 @@ sint32_t ParseIPD(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data)
 			sprintf(msg_irs,"IPD-ID\r\n");
 			for(i = old_i; i < buf_size; i++) {
 				if(',' == buf[i]) {
+					socket_data->wifi_id = atoi(&buf[old_i]);
 					IPDState = IPD_PARSE_COLON;
 					old_i = i+1;
 					break;
@@ -1380,6 +1416,7 @@ sint32_t ParseIPD(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data)
 			break;
 		case IPD_PARSE_LEN:
 			num = atoi(&buf[old_i]);
+			socket_data->ipd_size = num;
 			sprintf(msg_irs,"IPD-LEN=%d, %d\r\n", num, old_i);
 			for(i = old_i; i < buf_size; i++) {
 				if(':' == buf[i]) {
