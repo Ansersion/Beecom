@@ -5,7 +5,8 @@
 #include "bc.h"
 
 enum BC_ModID {
-	BC_MOD_DATAHUB=0,
+	BC_MOD_DEFAULT=0,
+	BC_MOD_DATAHUB,
 	BC_MOD_PHONE_APP,
 	BC_MOD_ZIGBEE,
 	BC_MOD_BLUETOOTH,
@@ -28,6 +29,13 @@ typedef struct BC_MsgDirMap {
 	uint8_t 				u8DstID3;
 	struct BC_MsgDirMap * 	pExtDst;
 }BC_MsgDirMap;
+
+#define BC_ASSERT_MOD_ID_VALID(ID) ((ID) < BC_MOD_INVALID)
+
+#define BC_EnQueue 	 	xQueueSend
+#define BC_OutQueue 	xQueueReceive
+#define BC_EnQueueISR 	xQueueSendFromISR
+#define BC_OutQueueISR 	xQueueReceiveFromISR
 
 #endif
 

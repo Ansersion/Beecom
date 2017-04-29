@@ -1,8 +1,8 @@
 #ifndef BEECOMINT_H
 #define BEECOMINT_H
 
-#define BC_FALSE 		0
-#define BC_TRUE 		1
+#define BC_FALSE 		pdFALSE
+#define BC_TRUE 		pdTRUE
 
 #define BC_OK 	0
 #define BC_ERR 	1
