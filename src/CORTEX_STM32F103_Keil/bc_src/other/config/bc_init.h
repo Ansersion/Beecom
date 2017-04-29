@@ -8,6 +8,7 @@
 
 #include "beecomint.h"
 #include "FreeRTOS.h"
+#include "queue.h"
 
 /* for serial terminal */
 #define USART_TERMINAL_BAUD_RATE 	9600
@@ -15,6 +16,7 @@
 /* for wifi module*/
 #define USART_WIFI_BAUD_RATE 	115200
 
+/* system essential initialization */
 sint32_t BC_Init(void);
 void LedInit(void);
 void UsartTermInit(uint32_t bound);

@@ -1,4 +1,24 @@
-#include "bc_init.h"
+#include <bc_init.h>
+#include <panic.h>
+#include <bc_type.h>
+
+QueueHandle_t BC_ModInQueue[] = {
+	NULL, 	// FOR MOD_PHONE_APP,
+	NULL, 	// FOR MOD_ZIGBEE,
+	NULL, 	// FOR MOD_BLUETOOTH,
+	NULL, 	// FOR MOD_NET_SERVER,
+	NULL, 	// FOR MOD_TERMINAL, 
+};
+uint32_t BC_ModInQueueSize = sizeof(BC_ModInQueue) / sizeof(QueueHandle_t);
+
+QueueHandle_t BC_ModOutQueue[] = {
+	NULL, 	// FOR MOD_PHONE_APP,
+	NULL, 	// FOR MOD_ZIGBEE,
+	NULL, 	// FOR MOD_BLUETOOTH,
+	NULL, 	// FOR MOD_NET_SERVER,
+	NULL, 	// FOR MOD_TERMINAL, 
+};
+uint32_t BC_ModOutQueueSize = sizeof(BC_ModOutQueue) / sizeof(QueueHandle_t);
 
 sint32_t BC_Init(void)
 {
@@ -14,13 +34,10 @@ sint32_t BC_Init(void)
 	// Buffer initialization
 	// BufInit();
 
-	// if(BC_QueueInit() != BC_OK) {
-	// 	while(1) {
-	// 		for(i = 0; i < 100000; i++) {
-	// 		}
-	// 		printf("QueueInit Error!\r\n");
-	// 	}
-	// }
+	if(BC_QueueInit() != BC_OK) {
+		BC_Panic("BC_QueueInit failed");
+		return BC_ERR; // never come here
+	}
 
 	// SocketInit();
 
@@ -177,23 +194,25 @@ void UsartWifiInit(uint32_t bound)
 // 	sock_data[4].queue_handle = xQueue4;
 // }
 // 
-// sint32_t BC_QueueInit(void)
-// {
-// 	sint32_t result = BC_OK;
-// 	uint32_t i = 0;
-// 	
-// 	if(!(xQueue0 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
-// 	if(!(xQueue1 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
-// 	if(!(xQueue2 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
-// 	if(!(xQueue3 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
-// 	if(!(xQueue4 = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
-// 
-// 	for(i = 0; i < MAX_CLI_QUEUE; i++) {
-// 		if(!(xQueueCli[i] = xQueueCreate(1, sizeof(BC_SocketData)))) result = BC_ERR;
-// 	}
-// 	
-// 	return result;
-// }
+sint32_t BC_QueueInit(void)
+{
+	uint32_t i = 0;
+
+	for(i = 0; i < BC_ModInQueueSize; i++) {
+		BC_ModInQueue[i] = xQueueCreate(1, sizeof(BC_QueueElement));
+		if(!BC_ModInQueue[i]) {
+			return BC_ERR;
+		}
+	}
+	for(i = 0; i < BC_ModOutQueueSize; i++) {
+		BC_ModOutQueue[i] = xQueueCreate(1, sizeof(BC_QueueElement));
+		if(!BC_ModOutQueue[i]) {
+			return BC_ERR;
+		}
+	}
+
+	return BC_OK;
+}
 // 
 // sint32_t BC_MutexInit(void)
 // {

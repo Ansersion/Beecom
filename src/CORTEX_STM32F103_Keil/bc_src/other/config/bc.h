@@ -1,6 +1,7 @@
 #ifndef BC_H
 #define BC_H
 
+#include "FreeRTOS.h"
 #include "task.h"
 
 /*-------------------------------------------------------------------*/
@@ -26,11 +27,14 @@
 /*-------------------------------------------------------------------*/
 
 /*************************************************
- The priority of "TaskDataHub" is higher than
- the comman tasks for high speed of transmitting
- inner messages.
+ Task stack size for all tasks
 ***************************************************/
 #define BC_CONFIG_TASK_STACK_SIZE 	((unsigned short)256)
+
+/*************************************************
+ Queue element buffer size
+***************************************************/
+#define BC_CONFIG_QUEUE_ELEMENT_BUF_SIZE 	(64)
 
 /*-------------------------------------------------------------------*/
 
