@@ -3,8 +3,8 @@
 #include <terminal.h>
 #include <datahub_task.h>
 #include <datahub_common.h>
-
 #include <bc_queue.h>
+
 
 // typedef struct BC_MsgDirMap {
 // 	uint8_t 		u8SrcID;

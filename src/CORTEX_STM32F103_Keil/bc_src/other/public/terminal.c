@@ -1,16 +1,18 @@
 #include <string.h>
 
-#include <terminal.h>
-
 #include <FreeRTOS.h>
 #include <queue.h>
 #include <task.h>
 
-
 #include <stm32f10x_gpio.h>
+
+#include <bc_msg.h>
+#include <terminal.h>
 
 #define LED_RED_TURN() (GPIOA->ODR ^= 1<<8) // red
 #define LED_GREEN_TURN() (GPIOD->ODR ^= 1<<2) // green
+
+#define MOD_ID_MYSELF BC_MOD_TERMINAL
 
 static uint8_t UsartTermBuf[USART_TERMINAL_BUF_SIZE];
 static uint8_t EndFlag[] = "\r\n";
