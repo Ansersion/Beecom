@@ -12,6 +12,7 @@ sint32_t BC_MsgInit(BC_QueueElement * qe, uint8_t src_mod, uint8_t dst_mod)
 	if(!BC_ASSERT_MOD_ID_VALID(dst_mod)) {
 		return INVALID_DST_MOD_ID;
 	}
+	qe->u16MsgLen = 0;
 	qe->u8SrcID = src_mod;
 	qe->u8DstID = dst_mod;
 	return BC_OK;

@@ -8,11 +8,14 @@
 
 #include <bc_msg.h>
 #include <terminal.h>
+#include <bc_queue.h>
+
+extern TaskHandle_t DataHubHandle;
 
 #define LED_RED_TURN() (GPIOA->ODR ^= 1<<8) // red
 #define LED_GREEN_TURN() (GPIOD->ODR ^= 1<<2) // green
 
-#define MOD_ID_MYSELF BC_MOD_TERMINAL
+#define BC_MOD_MYSELF BC_MOD_TERMINAL
 
 static uint8_t UsartTermBuf[USART_TERMINAL_BUF_SIZE];
 static uint8_t EndFlag[] = "\r\n";
@@ -61,6 +64,8 @@ volatile void IrqUsartTerminal(void)
 
 void TaskTerminal(void * pvParameters)
 {
+	static BC_QueueElement qe;
+
 	if(InitTerm() != BC_OK) {
 		while(1) {
 			vTaskDelay(TIMEOUT_COMMON);
@@ -72,7 +77,14 @@ void TaskTerminal(void * pvParameters)
 			// Indicate led
 			LED_GREEN_TURN();
 		}
-		printf("Got: %s\r\n", UsartTermBuf);
+		BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_DATAHUB);
+		BC_MsgSetMsg(&qe, UsartTermBuf, strlen(UsartTermBuf));
+		while(BC_EnQueue(BC_ModInQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
+		}
+		vTaskResume(DataHubHandle);
+		if(BC_OutQueue(BC_ModOutQueue[BC_MOD_MYSELF], &qe, 0) == BC_TRUE) {
+			// process 
+		}
 	}
 }
 

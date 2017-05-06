@@ -126,6 +126,7 @@
  * Configure the clocks, GPIO and other peripherals as required by the demo.
  */
 static void prvSetupHardware( void );
+TaskHandle_t DataHubHandle;
 
 int main( void )
 {
@@ -141,7 +142,7 @@ int main( void )
 	xTaskCreate(TaskBluetoothUI, "TaskBluetoothUI", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
 	xTaskCreate(TaskServerAgent, "TaskServerAgent", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
 	xTaskCreate(TaskTerminal, "TaskTerminal", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
-	xTaskCreate(TaskDataHub, "TaskDataHuh", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_DATA_HUB, NULL);
+	xTaskCreate(TaskDataHub, "TaskDataHuh", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_DATA_HUB, &DataHubHandle);
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();

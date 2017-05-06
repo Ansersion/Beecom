@@ -46,6 +46,7 @@ void TaskDataHub(void *pvParameters)
 				continue;
 			}
 			if(BC_OutQueue(BC_ModInQueue[src_id], &queue_element, 0) == BC_TRUE) {
+				printf("datahub: get queue: %d->%d\r\n", queue_element.u8SrcID, queue_element.u8DstID);
 				BC_Transmit2Mod(&queue_element, &ModMsgMap[i]);
 			}
 		}
@@ -58,7 +59,9 @@ void TaskDataHub(void *pvParameters)
 sint32_t ProcQueueElm(void)
 {
 	static BC_QueueElement queue_element;
-	BC_OutQueue(BC_ModOutQueue[BC_MOD_DATAHUB], &queue_element, 0);
+	if(BC_OutQueue(BC_ModOutQueue[BC_MOD_DATAHUB], &queue_element, 0) == BC_TRUE) {
+		printf("Datahub: %d->OutQueue For Datahub\r\n", queue_element.u8SrcID);
+	}
 	return 0;
 	// no need to resumd task 'datahub'(because it's myself)
 	// vTaskResume();
@@ -97,7 +100,7 @@ sint32_t BC_Transmit2Mod(BC_QueueElement * que_elm, BC_MsgDirMap * msg_dir_map)
 		} else {
 			return 0;
 		}
-		return BC_Transmit2Mod(que_elm, msg_dir_map);
+		return BC_Transmit2Mod(que_elm, msg_dir_map->pExtDst);
 	}
 }
 
