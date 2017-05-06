@@ -8,7 +8,7 @@ void TaskBluetoothUI(void *pvParameters)
 
 	while(BC_TRUE) {
 		vTaskDelay(delay_ms);
-		printf("TaskBluetoothUI\r\n");
+		// printf("TaskBluetoothUI\r\n");
 	}
 }
 

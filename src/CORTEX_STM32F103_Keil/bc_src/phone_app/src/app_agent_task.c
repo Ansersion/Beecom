@@ -12,7 +12,7 @@ void TaskAppAgent(void *pvParameters)
 
 	while(BC_TRUE) {
 		vTaskDelay(delay_ms);
-		printf("TaskAppAgent\r\n");
+		// printf("TaskAppAgent\r\n");
 	}
 }
 

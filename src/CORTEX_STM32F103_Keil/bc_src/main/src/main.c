@@ -120,6 +120,7 @@
 #include "bt_ui_task.h"
 #include "server_agent_task.h"
 #include "datahub_task.h"
+#include "terminal.h"
 
 /*
  * Configure the clocks, GPIO and other peripherals as required by the demo.
@@ -139,7 +140,8 @@ int main( void )
 	xTaskCreate(TaskZigbeeAgent, "TaskZigbeeAgent", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
 	xTaskCreate(TaskBluetoothUI, "TaskBluetoothUI", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
 	xTaskCreate(TaskServerAgent, "TaskServerAgent", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
-	xTaskCreate(TaskDataHub, "TaskDataHuh", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
+	xTaskCreate(TaskTerminal, "TaskTerminal", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
+	xTaskCreate(TaskDataHub, "TaskDataHuh", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_DATA_HUB, NULL);
 
 	/* Start the scheduler. */
 	vTaskStartScheduler();

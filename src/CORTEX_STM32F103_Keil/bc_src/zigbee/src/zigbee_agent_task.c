@@ -8,7 +8,7 @@ void TaskZigbeeAgent(void *pvParameters)
 
 	while(BC_TRUE) {
 		vTaskDelay(delay_ms);
-		printf("TaskZigbeeAgent\r\n");
+		// printf("TaskZigbeeAgent\r\n");
 	}
 }
 
