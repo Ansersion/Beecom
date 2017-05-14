@@ -1,14 +1,35 @@
+//   Copyright 2017 Ansersion
+//
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
+//
+
+// STD headers
 #include <string.h>
 
+// FreeRTOS headers
 #include <FreeRTOS.h>
 #include <queue.h>
 #include <task.h>
 
+// STM32 headers
 #include <stm32f10x_gpio.h>
 
+// Beecom headers
 #include <bc_msg.h>
 #include <terminal.h>
 #include <bc_queue.h>
+#include <panic.h>
+#include <utils.h>
 
 extern TaskHandle_t DataHubHandle;
 
@@ -25,7 +46,7 @@ static uint32_t FlagSize = sizeof(EndFlag) - 1;
 static uint32_t GotMsgFlag = BC_FALSE;
 static QueueHandle_t UsartMsgQueue;
 
-sint32_t InitTerm(void)
+sint32_t TaskTerminalInit(void)
 {
 	UsartMsgQueue = NULL;
 	memset(UsartTermBuf, 0, sizeof(UsartTermBuf));
@@ -55,7 +76,8 @@ volatile void IrqUsartTerminal(void)
 		Index = 0;
 		return;
 	}
-	if(BC_OK == CheckEndFlag(UsartTermBuf, Index, EndFlag, FlagSize)) {
+	// if(BC_OK == CheckEndFlag(UsartTermBuf, Index, EndFlag, FlagSize)) {
+	if(BC_OK == CheckDataFlag(UsartTermBuf, Index, EndFlag, FlagSize, BC_TRUE)) {
 		xQueueSendFromISR(UsartMsgQueue, &GotMsgFlag, &xHigherPriorityTaskWoken);
 		UsartTermBuf[Index] = '\0';
 		Index = 0;
@@ -65,49 +87,50 @@ volatile void IrqUsartTerminal(void)
 void TaskTerminal(void * pvParameters)
 {
 	static BC_QueueElement qe;
+	static uint8_t * msg = UsartTermBuf;
 
-	if(InitTerm() != BC_OK) {
-		while(1) {
-			vTaskDelay(TIMEOUT_COMMON);
-			printf("Terminal: Init error\r\n");
-		}
+	if(TaskTerminalInit() != BC_OK) {
+		BC_Panic("Ternimal Init");
 	}
+
 	while(1) {
 		while(BC_FALSE == xQueueReceive(UsartMsgQueue, &GotMsgFlag, TIMEOUT_COMMON)) {
 			// Indicate led
-			LED_GREEN_TURN();
+			LED_RED_TURN();
 		}
-		BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_DATAHUB);
-		BC_MsgSetMsg(&qe, UsartTermBuf, strlen(UsartTermBuf));
-		while(BC_EnQueue(BC_ModInQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
+		// BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_DATAHUB);
+		BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_DEFAULT);
+		// BC_MsgSetMsg(&qe, UsartTermBuf, strlen(UsartTermBuf));
+		BC_MsgSetMsg(&qe, msg, strlen((const char *)msg));
+		while(BC_Enqueue(BC_ModInQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
 		}
 		vTaskResume(DataHubHandle);
-		if(BC_OutQueue(BC_ModOutQueue[BC_MOD_MYSELF], &qe, 0) == BC_TRUE) {
+		if(BC_Dequeue(BC_ModOutQueue[BC_MOD_MYSELF], &qe, 0) == BC_TRUE) {
 			// process 
 		}
 	}
 }
 
-sint32_t CheckEndFlag(uint8_t * msg, uint32_t msg_size, uint8_t * flag, uint32_t flag_size)
-{
-
-	static sint32_t i = 0;
-	if(msg_size < flag_size) {
-		return BC_ERR;
-	}
-	if(!msg) {
-		return BC_ERR;
-	}
-	if(!flag) {
-		return BC_ERR;
-	}
-	for(i = 0; i < flag_size; i++) {
-		if(msg[msg_size - flag_size + i] != flag[i]) {
-			return BC_ERR;
-		}
-	}
-	return BC_OK;
-}
+// sint32_t CheckEndFlag(uint8_t * msg, uint32_t msg_size, uint8_t * flag, uint32_t flag_size)
+// {
+// 
+// 	static sint32_t i = 0;
+// 	if(msg_size < flag_size) {
+// 		return BC_ERR;
+// 	}
+// 	if(!msg) {
+// 		return BC_ERR;
+// 	}
+// 	if(!flag) {
+// 		return BC_ERR;
+// 	}
+// 	for(i = 0; i < flag_size; i++) {
+// 		if(msg[msg_size - flag_size + i] != flag[i]) {
+// 			return BC_ERR;
+// 		}
+// 	}
+// 	return BC_OK;
+// }
 
 #if 1
 #pragma import(__use_no_semihosting)             

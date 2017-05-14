@@ -1,8 +1,8 @@
 #ifndef BC_TYPE_H
 #define BC_TYPE_H
 
-#include "beecomint.h"
-#include "bc.h"
+#include <beecomint.h>
+#include <bc.h>
 
 enum BC_ModID {
 	BC_MOD_DEFAULT=0,
@@ -32,10 +32,27 @@ typedef struct BC_MsgDirMap {
 
 #define BC_ASSERT_MOD_ID_VALID(ID) ((ID) < BC_MOD_INVALID)
 
-#define BC_EnQueue 	 	xQueueSend
-#define BC_OutQueue 	xQueueReceive
-#define BC_EnQueueISR 	xQueueSendFromISR
-#define BC_OutQueueISR 	xQueueReceiveFromISR
+/************************************
+  Push a queue element into the queue
+*************************************/
+#define BC_Enqueue 	 	xQueueSend
+
+/************************************
+  Extract a queue element from the queue
+*************************************/
+#define BC_Dequeue 	xQueueReceive
+
+/************************************
+  Push a queue element into the queue
+  in IRQ context
+*************************************/
+#define BC_EnqueueISR 	xQueueSendFromISR
+
+/************************************
+  Extract a queue element from the queue
+  in IRQ context
+*************************************/
+#define BC_DequeueISR 	xQueueReceiveFromISR
 
 #endif
 

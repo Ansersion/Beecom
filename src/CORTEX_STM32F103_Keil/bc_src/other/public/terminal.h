@@ -17,8 +17,8 @@ int fputc(int ch, FILE *f);
 volatile void IrqUsartTerminal(void);
 // volatile void vUARTInterruptHandler(void);
 void TaskTerminal(void * pvParameters);
-sint32_t InitTerm(void);
-sint32_t CheckEndFlag(uint8_t * msg, uint32_t msg_size, uint8_t * flag, uint32_t flag_size);
+sint32_t TaskTerminalInit(void);
+// sint32_t CheckEndFlag(uint8_t * msg, uint32_t msg_size, uint8_t * flag, uint32_t flag_size);
 
 
 #endif

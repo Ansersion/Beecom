@@ -1,9 +1,25 @@
+//   Copyright 2017 Ansersion
+//
+//   Licensed under the Apache License, Version 2.0 (the "License");
+//   you may not use this file except in compliance with the License.
+//   You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in writing, software
+//   distributed under the License is distributed on an "AS IS" BASIS,
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//   See the License for the specific language governing permissions and
+//   limitations under the License.
+//
+
 #include <string.h>
 
 #include <terminal.h>
 #include <datahub_task.h>
 #include <datahub_common.h>
 #include <bc_queue.h>
+#include <panic.h>
 
 
 // typedef struct BC_MsgDirMap {
@@ -36,6 +52,12 @@ void TaskDataHub(void *pvParameters)
 	static uint8_t src_id = BC_MOD_INVALID;
 	static BC_QueueElement queue_element;
 
+	static DataHubInit_Type init_type;
+
+	if(TaskDataHubInit(&init_type) != 0) {
+		BC_Panic("Datahub init");
+	}
+
 	while(BC_TRUE) {
 		// printf("DataHub\r\n");
 		memset(&queue_element, 0, sizeof(queue_element));
@@ -45,9 +67,9 @@ void TaskDataHub(void *pvParameters)
 				// printf("DEBUG: DataHub\r\n");
 				continue;
 			}
-			if(BC_OutQueue(BC_ModInQueue[src_id], &queue_element, 0) == BC_TRUE) {
+			if(BC_Dequeue(BC_ModInQueue[src_id], &queue_element, 0) == BC_TRUE) {
 				printf("datahub: get queue: %d->%d\r\n", queue_element.u8SrcID, queue_element.u8DstID);
-				BC_Transmit2Mod(&queue_element, &ModMsgMap[i]);
+				printf("bc_transmit ret=%d\r\n", BC_Transmit2Mod(&queue_element, &ModMsgMap[i]));
 			}
 		}
 		ProcQueueElm();
@@ -56,18 +78,16 @@ void TaskDataHub(void *pvParameters)
 	}
 }
 
-sint32_t ProcQueueElm(void)
+static sint32_t TaskDataHubInit(DataHubInit_Type * init_type)
 {
-	static BC_QueueElement queue_element;
-	if(BC_OutQueue(BC_ModOutQueue[BC_MOD_DATAHUB], &queue_element, 0) == BC_TRUE) {
-		printf("Datahub: %d->OutQueue For Datahub\r\n", queue_element.u8SrcID);
+	// Nothing need to do
+	if(!init_type) {
+		return -1;
 	}
-	return 0;
-	// no need to resumd task 'datahub'(because it's myself)
-	// vTaskResume();
+	return BC_OK;
 }
 
-sint32_t BC_Transmit2Mod(BC_QueueElement * que_elm, BC_MsgDirMap * msg_dir_map)
+static sint32_t BC_Transmit2Mod(BC_QueueElement * que_elm, BC_MsgDirMap * msg_dir_map)
 {
 	if(!que_elm) {
 		return -1;
@@ -78,7 +98,7 @@ sint32_t BC_Transmit2Mod(BC_QueueElement * que_elm, BC_MsgDirMap * msg_dir_map)
 	if(que_elm->u8DstID != BC_MOD_DEFAULT) {
 		// if the queue is full
 		// the data will be dropped
-		BC_EnQueue(BC_ModOutQueue[que_elm->u8DstID], que_elm, 0);
+		BC_Enqueue(BC_ModOutQueue[que_elm->u8DstID], que_elm, 0);
 		return 0;
 		
 	} else {
@@ -86,21 +106,32 @@ sint32_t BC_Transmit2Mod(BC_QueueElement * que_elm, BC_MsgDirMap * msg_dir_map)
 			return -3;
 		}
 		if(BC_ASSERT_MOD_ID_VALID(msg_dir_map->u8DstID1) && msg_dir_map->u8DstID1 != BC_MOD_DEFAULT) {
-			BC_EnQueue(BC_ModOutQueue[msg_dir_map->u8DstID1], que_elm, 0);
+			BC_Enqueue(BC_ModOutQueue[msg_dir_map->u8DstID1], que_elm, 0);
 		} else {
 			return -4;
 		}	
 		if(BC_ASSERT_MOD_ID_VALID(msg_dir_map->u8DstID2) && msg_dir_map->u8DstID2 != BC_MOD_DEFAULT) {
-			BC_EnQueue(BC_ModOutQueue[msg_dir_map->u8DstID2], que_elm, 0);
+			BC_Enqueue(BC_ModOutQueue[msg_dir_map->u8DstID2], que_elm, 0);
 		} else {
 			return 0;
 		}
 		if(BC_ASSERT_MOD_ID_VALID(msg_dir_map->u8DstID3) && msg_dir_map->u8DstID3 != BC_MOD_DEFAULT) {
-			BC_EnQueue(BC_ModOutQueue[msg_dir_map->u8DstID3], que_elm, 0);
+			BC_Enqueue(BC_ModOutQueue[msg_dir_map->u8DstID3], que_elm, 0);
 		} else {
 			return 0;
 		}
 		return BC_Transmit2Mod(que_elm, msg_dir_map->pExtDst);
 	}
+}
+
+static sint32_t ProcQueueElm(void)
+{
+	static BC_QueueElement queue_element;
+	if(BC_Dequeue(BC_ModOutQueue[BC_MOD_DATAHUB], &queue_element, 0) == BC_TRUE) {
+		printf("Datahub: %d->OutQueue For Datahub\r\n", queue_element.u8SrcID);
+	}
+	return 0;
+	// no need to resumd task 'datahub'(because it's myself)
+	// vTaskResume();
 }
 

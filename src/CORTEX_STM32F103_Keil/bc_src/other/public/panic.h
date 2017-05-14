@@ -3,6 +3,7 @@
 
 #include <beecomint.h>
 
+/* Never return */
 void BC_Panic(uint8_t * msg);
 
 #endif
