@@ -98,6 +98,7 @@ void TaskTerminal(void * pvParameters)
 			// Indicate led
 			LED_RED_TURN();
 		}
+		// process
 		// BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_DATAHUB);
 		BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_DEFAULT);
 		// BC_MsgSetMsg(&qe, UsartTermBuf, strlen(UsartTermBuf));
@@ -131,6 +132,22 @@ void TaskTerminal(void * pvParameters)
 // 	}
 // 	return BC_OK;
 // }
+
+sint32_t uputs(USART_TypeDef * usart, sint8_t * str)
+{
+	if(!usart || !str) {
+		return -1;
+	}
+	if('\0' == *str) {
+		return 0;
+	}
+	do {
+		USART_SendData(usart,*str++);
+		while(USART_GetFlagStatus(usart,USART_FLAG_TC)!=SET);
+	}while('\0' != *str);
+
+	return 0;
+}
 
 #if 1
 #pragma import(__use_no_semihosting)             

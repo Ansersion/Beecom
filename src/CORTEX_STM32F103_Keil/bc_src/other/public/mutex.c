@@ -60,3 +60,31 @@ sint32_t BCMutexUnlock(BC_Mutex * mutex)
 	}
 	return BC_OK;
 }
+
+sint32_t BCMutexLockISR(BC_Mutex * mutex)
+{
+	if(!mutex) {
+		return -1;
+	}
+	if(!(mutex->qh)) {
+		return -2;
+	}
+	if(BC_DequeueISR(mutex->qh, &(mutex->u32Qh), NULL) != BC_TRUE) {
+		return -3;
+	}
+	return BC_OK;
+}
+
+sint32_t BCMutexUnlockISR(BC_Mutex * mutex)
+{
+	if(!mutex) {
+		return -1;
+	}
+	if(!(mutex->qh)) {
+		return -2;
+	}
+	if(BC_EnqueueISR(mutex->qh, &(mutex->u32Qh), NULL) != BC_TRUE) {
+		return -3;
+	}
+	return BC_OK;
+}

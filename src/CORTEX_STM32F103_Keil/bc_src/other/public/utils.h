@@ -13,8 +13,10 @@
 //   limitations under the License.
 //
 
-#ifndef UTILS_C
-#define UTILS_C
+#ifndef UTILS_H
+#define UTILS_H
+
+#include <bc_type.h>
 
 sint32_t CheckDataFlag(uint8_t * buf, uint32_t buf_size, uint8_t * flag, uint32_t flag_size, bool_t is_end_term);
 

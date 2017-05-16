@@ -479,6 +479,31 @@
               <FileType>1</FileType>
               <FilePath>.\bc_src\other\public\terminal.c</FilePath>
             </File>
+            <File>
+              <FileName>panic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\other\public\panic.c</FilePath>
+            </File>
+            <File>
+              <FileName>bc_queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\other\public\bc_queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>bc_msg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\other\public\bc_msg.c</FilePath>
+            </File>
+            <File>
+              <FileName>mutex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\other\public\mutex.c</FilePath>
+            </File>
+            <File>
+              <FileName>utils.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\other\public\utils.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -21,7 +21,6 @@
 
 // Beecom headers
 #include <bc_type.h>
-#include <app_agent_common.h>
 
 #include <terminal.h>
 #include <mutex.h>
@@ -29,6 +28,7 @@
 #include <bc_queue.h>
 
 #include <app_agent_task.h>
+#include <app_agent_irq.h>
 #include <app_agent_common.h>
 
 extern TaskHandle_t DataHubHandle;
@@ -37,10 +37,10 @@ extern TaskHandle_t DataHubHandle;
 
 #define BC_MOD_MYSELF BC_MOD_PHONE_APP
 
-static uint8_t UsartWifiBuf[USART_WIFI_BUF_SIZE];
+// static uint8_t UsartWifiBuf[USART_WIFI_BUF_SIZE];
 static QueueHandle_t UsartMsgQueue;
 static uint32_t GotMsgFlag = BC_FALSE;
-static BC_Mutex mutex;
+// static BC_Mutex mutex;
 
 void TaskAppAgent(void *pvParameters)
 {
@@ -72,11 +72,11 @@ void TaskAppAgent(void *pvParameters)
 sint32_t TaskAppAgentInit(void)
 {
 	UsartMsgQueue = NULL;
-	memset(UsartWifiBuf, 0, sizeof(UsartWifiBuf));
+	memset(UsartWifiBuf, 0, USART_WIFI_BUF_SIZE);
 	GotMsgFlag = BC_FALSE;
 	UsartMsgQueue = xQueueCreate(1, sizeof(GotMsgFlag));
 
-	if(BCMutexInit(&mutex) != BC_OK) {
+	if(BCMutexInit(&WifiRecvFlagMutex) != BC_OK) {
 		return BC_ERR;
 	}
 	if(!UsartMsgQueue) {
@@ -88,6 +88,11 @@ sint32_t TaskAppAgentInit(void)
 sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg)
 {
 	return BC_OK;
+}
+
+sint32_t BC_Atoi(char n)
+{
+		return n - '0';
 }
 
 // volatile void IrqUsartWifi( void )

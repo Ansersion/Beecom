@@ -45,7 +45,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\target\</OutputDirectory>
-          <OutputName>RTOSDemo</OutputName>
+          <OutputName>bc_center</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -361,7 +361,7 @@
               <MiscControls></MiscControls>
               <Define>RVDS_ARMCM3_LM3S102</Define>
               <Undefine></Undefine>
-              <IncludePath>..\CORTEX_STM32F103_Keil;.\STM32F10xFWLib\inc;.\bc_src\main\inc;.\bc_src\bluetooth\inc;.\bc_src\datahub\inc;.\bc_src\net_server\inc;.\bc_src\phone_app\inc;.\bc_src\wifi\inc;.\bc_src\other\irq;.\bc_src\other\public;.\bc_src\other\config;.\bc_src\freertos_src\include;.\bc_src\freertos_src\portable\RVDS\ARM_CM3</IncludePath>
+              <IncludePath>..\CORTEX_STM32F103_Keil;.\STM32F10xFWLib\inc;.\bc_src\main\inc;.\bc_src\bluetooth\inc;.\bc_src\datahub\inc;.\bc_src\net_server\inc;.\bc_src\phone_app\inc;.\bc_src\other\irq;.\bc_src\other\public;.\bc_src\other\config;.\bc_src\freertos_src\include;.\bc_src\freertos_src\portable\RVDS\ARM_CM3;.\bc_src\zigbee\inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -460,11 +460,6 @@
           <GroupName>other</GroupName>
           <Files>
             <File>
-              <FileName>printf_to_serial.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\bc_src\other\public\printf_to_serial.c</FilePath>
-            </File>
-            <File>
               <FileName>STM32F10x.s</FileName>
               <FileType>2</FileType>
               <FilePath>.\bc_src\other\irq\STM32F10x.s</FilePath>
@@ -479,60 +474,100 @@
               <FileType>1</FileType>
               <FilePath>.\bc_src\other\config\bc_init.c</FilePath>
             </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>wifi</GroupName>
-          <Files>
             <File>
-              <FileName>wifi_common.c</FileName>
+              <FileName>terminal.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\bc_src\wifi\src\wifi_common.c</FilePath>
+              <FilePath>.\bc_src\other\public\terminal.c</FilePath>
             </File>
             <File>
-              <FileName>wifi_irq.c</FileName>
+              <FileName>panic.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\bc_src\wifi\src\wifi_irq.c</FilePath>
+              <FilePath>.\bc_src\other\public\panic.c</FilePath>
             </File>
             <File>
-              <FileName>wifi_task.c</FileName>
+              <FileName>bc_queue.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\bc_src\wifi\src\wifi_task.c</FilePath>
+              <FilePath>.\bc_src\other\public\bc_queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>bc_msg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\other\public\bc_msg.c</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
           <GroupName>zigbee</GroupName>
+          <Files>
+            <File>
+              <FileName>zigbee_agent_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\zigbee\src\zigbee_agent_task.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>bluetooth</GroupName>
+          <Files>
+            <File>
+              <FileName>bt_ui_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\bluetooth\src\bt_ui_task.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>phone_app</GroupName>
+          <Files>
+            <File>
+              <FileName>app_agent_common.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\phone_app\src\app_agent_common.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_agent_irq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\phone_app\src\app_agent_irq.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_agent_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\phone_app\src\app_agent_task.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>net_server</GroupName>
+          <Files>
+            <File>
+              <FileName>server_agent_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\net_server\src\server_agent_task.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>datahub</GroupName>
+          <Files>
+            <File>
+              <FileName>datahub_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\datahub\src\datahub_task.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>freertos</GroupName>
           <Files>
             <File>
-              <FileName>heap_2.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\bc_src\freertos_src\portable\MemMang\heap_2.c</FilePath>
-            </File>
-            <File>
-              <FileName>port.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\bc_src\freertos_src\portable\RVDS\ARM_CM3\port.c</FilePath>
-            </File>
-            <File>
               <FileName>list.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\bc_src\freertos_src\list.c</FilePath>
+            </File>
+            <File>
+              <FileName>queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\freertos_src\queue.c</FilePath>
             </File>
             <File>
               <FileName>tasks.c</FileName>
@@ -540,9 +575,14 @@
               <FilePath>.\bc_src\freertos_src\tasks.c</FilePath>
             </File>
             <File>
-              <FileName>queue.c</FileName>
+              <FileName>port.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\bc_src\freertos_src\queue.c</FilePath>
+              <FilePath>.\bc_src\freertos_src\portable\RVDS\ARM_CM3\port.c</FilePath>
+            </File>
+            <File>
+              <FileName>heap_2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\freertos_src\portable\MemMang\heap_2.c</FilePath>
             </File>
           </Files>
         </Group>

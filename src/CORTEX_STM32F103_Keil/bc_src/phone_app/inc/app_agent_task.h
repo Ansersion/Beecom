@@ -23,10 +23,7 @@
 // Beecom headers
 #include <app_agent_common.h>
 #include <bc_type.h>
-
-#define USART_WIFI 		USART2
-
-#define USART_WIFI_BUF_SIZE 	128
+#include <app_agent_irq.h>
 
 /* UART interrupt handler. */
 volatile void IrqUsartWifi( void );
