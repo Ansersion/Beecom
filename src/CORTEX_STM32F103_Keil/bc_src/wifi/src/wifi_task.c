@@ -47,7 +47,7 @@ void TaskWifiAgent(void *pvParameters)
 	static BC_QueueElement qe;
 	static uint8_t * msg = UsartWifiBuf;
 
-	if(TaskAppAgentInit() != BC_OK) {
+	if(TaskWifiAgentInit() != BC_OK) {
 		BC_Panic("AppAgent Init");
 	}
 
@@ -69,7 +69,7 @@ void TaskWifiAgent(void *pvParameters)
 	}
 }
 
-sint32_t TaskAppAgentInit(void)
+sint32_t TaskWifiAgentInit(void)
 {
 	UsartMsgQueue = NULL;
 	memset(UsartWifiBuf, 0, USART_WIFI_BUF_SIZE);

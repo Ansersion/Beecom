@@ -29,7 +29,7 @@
 volatile void IrqUsartWifi( void );
 
 void TaskWifiAgent(void *para);
-sint32_t TaskAppAgentInit(void);
+sint32_t TaskWifiAgentInit(void);
 sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg);
 
 #endif

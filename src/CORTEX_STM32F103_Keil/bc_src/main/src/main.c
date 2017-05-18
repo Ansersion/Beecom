@@ -115,12 +115,13 @@
 #include "bc_init.h"
 
 /* tasks */
-#include "app_agent_task.h"
-#include "zigbee_agent_task.h"
-#include "bt_ui_task.h"
-#include "server_agent_task.h"
-#include "datahub_task.h"
-#include "terminal.h"
+#include <wifi_task.h>
+#include <app_agent_task.h>
+#include <zigbee_agent_task.h>
+#include <bt_ui_task.h>
+#include <server_agent_task.h>
+#include <datahub_task.h>
+#include <terminal.h>
 
 /*
  * Configure the clocks, GPIO and other peripherals as required by the demo.
@@ -137,6 +138,7 @@ int main( void )
 	BC_Init();
 	
 	/* create beecom system tasks */
+	xTaskCreate(TaskWifiAgent, "TaskWifiAgent", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
 	xTaskCreate(TaskAppAgent, "TaskAppAgent", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
 	xTaskCreate(TaskZigbeeAgent, "TaskZigbeeAgent", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
 	xTaskCreate(TaskBluetoothUI, "TaskBluetoothUI", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);
