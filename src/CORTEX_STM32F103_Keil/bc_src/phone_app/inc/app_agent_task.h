@@ -23,14 +23,9 @@
 // Beecom headers
 #include <app_agent_common.h>
 #include <bc_type.h>
-#include <app_agent_irq.h>
-
-/* UART interrupt handler. */
-volatile void IrqUsartWifi( void );
 
 void TaskAppAgent(void *para);
 sint32_t TaskAppAgentInit(void);
-sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg);
 
 #endif
 

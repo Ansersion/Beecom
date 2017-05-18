@@ -1,8 +1,8 @@
-#ifndef APP_AGENT_IRQ_H
-#define APP_AGENT_IRQ_H
+#ifndef WIFI_IRQ_H
+#define WIFI_IRQ_H
 
 #include <irq.h>
-#include <app_agent_common.h>
+#include <wifi_common.h>
 #include <mutex.h>
 
 #define USART_WIFI 		USART2

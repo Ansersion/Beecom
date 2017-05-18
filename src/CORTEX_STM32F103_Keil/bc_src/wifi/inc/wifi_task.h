@@ -13,40 +13,24 @@
 //   limitations under the License.
 //
 
-// STD headers
-#include <string.h>
+#ifndef WIFI_TASK_H
+#define WIFI_TASK_H
 
 // STM32 headers
-#include <stm32f10x_gpio.h>
+#include <stm32f10x_usart.h>
+#include <stm32f10x_it.h>
 
 // Beecom headers
+#include <wifi_common.h>
 #include <bc_type.h>
+#include <wifi_irq.h>
 
-#include <terminal.h>
-#include <mutex.h>
-#include <panic.h>
-#include <bc_queue.h>
+/* UART interrupt handler. */
+volatile void IrqUsartWifi( void );
 
-#include <app_agent_task.h>
-#include <app_agent_common.h>
+void TaskWifiAgent(void *para);
+sint32_t TaskAppAgentInit(void);
+sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg);
 
-extern TaskHandle_t DataHubHandle;
+#endif
 
-#define LED_GREEN_TURN() (GPIOD->ODR ^= 1<<2) // green
-
-#define BC_MOD_MYSELF BC_MOD_PHONE_APP
-
-void TaskAppAgent(void *pvParameters)
-{
-	// block for 2000ms
-	const TickType_t delay_ms = 2000 / portTICK_PERIOD_MS;
-
-	while(BC_TRUE) {
-		vTaskDelay(delay_ms);
-		// printf("TaskZigbeeAgent\r\n");
-	}
-}
-// volatile void IrqUsartWifi( void )
-// {
-// }
-// 

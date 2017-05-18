@@ -21,7 +21,7 @@
 
 #include <utils.h>
 #include <bc_type.h>
-#include <app_agent_irq.h>
+#include <wifi_irq.h>
 #include <mutex.h>
 
 uint8_t UsartWifiBuf[USART_WIFI_BUF_SIZE];
@@ -48,7 +48,7 @@ volatile void IrqUsartWifi(void)
 	static uint16_t RxData=0;
 	static sint32_t u32CurrentSockId = -1;
 	BC_SocketData sock_data_tmp;
-	BaseType_t xHigherPriorityTaskWoken;
+	// BaseType_t xHigherPriorityTaskWoken;
 
 	if(USART_GetITStatus(USART_WIFI, USART_IT_RXNE) == RESET) {
 		return;

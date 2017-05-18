@@ -494,6 +494,16 @@
               <FileType>1</FileType>
               <FilePath>.\bc_src\other\public\bc_msg.c</FilePath>
             </File>
+            <File>
+              <FileName>mutex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\other\public\mutex.c</FilePath>
+            </File>
+            <File>
+              <FileName>utils.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\other\public\utils.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
