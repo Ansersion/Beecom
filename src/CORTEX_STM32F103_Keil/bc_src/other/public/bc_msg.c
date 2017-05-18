@@ -53,6 +53,7 @@ sint32_t BC_MsgSetMsg(BC_QueueElement * qe, uint8_t * msg, uint16_t msg_size)
 	if(msg_size > BC_CONFIG_QUEUE_ELEMENT_BUF_SIZE) {
 		return INVALID_MSG_SIZE;
 	}
+	qe->u16MsgLen = msg_size;
 	memcpy(qe->pText, msg, msg_size);
 	return BC_OK;
 }

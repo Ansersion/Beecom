@@ -68,6 +68,7 @@ volatile void IrqUsartWifi(void)
 	}
 	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_OK_END, WIFI_FLAG_OK_END_SIZE, TRUE)) {
 		WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
+		UsartWifiBuf[Index] = '\0';
 		Index = 0;
 		return;
 	}
@@ -79,54 +80,54 @@ volatile void IrqUsartWifi(void)
 	}
 
 	// client connects to local server
-	if(Index >= 1) {
-		if(isdigit(UsartWifiBuf[0])) {
-			u32CurrentSockId = BC_Atoi(UsartWifiBuf[0]);
-			if(u32CurrentSockId != 0) {
-				return;
-			}
-			if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CONN_END, WIFI_FLAG_CONN_END_SIZE, TRUE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_CONNECT) == 0) {
-				// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data[u32CurrentSockId], &xHigherPriorityTaskWoken)) {
-				// 	// sprintf(msg_irs, "CONN QUE Err\r\n");
-				// } else {
-				// 	// sprintf(msg_irs, "CONN QUE OK\r\n");
-				// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CONNECT;
-				// }
-				Index = 0;
-				return;
-			}
-			if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CLOSED_END, WIFI_FLAG_CLOSED_END_SIZE, TRUE)) {
-				// sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
-				WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLOSED;
-				Index = 0;
-				return;
-			}
-		}
-	}
+	// if(Index >= 1) {
+	// 	if(isdigit(UsartWifiBuf[0])) {
+	// 		u32CurrentSockId = BC_Atoi(UsartWifiBuf[0]);
+	// 		if(u32CurrentSockId != 0) {
+	// 			return;
+	// 		}
+	// 		if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CONN_END, WIFI_FLAG_CONN_END_SIZE, TRUE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_CONNECT) == 0) {
+	// 			// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data[u32CurrentSockId], &xHigherPriorityTaskWoken)) {
+	// 			// 	// sprintf(msg_irs, "CONN QUE Err\r\n");
+	// 			// } else {
+	// 			// 	// sprintf(msg_irs, "CONN QUE OK\r\n");
+	// 			// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CONNECT;
+	// 			// }
+	// 			Index = 0;
+	// 			return;
+	// 		}
+	// 		if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CLOSED_END, WIFI_FLAG_CLOSED_END_SIZE, TRUE)) {
+	// 			// sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
+	// 			WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLOSED;
+	// 			Index = 0;
+	// 			return;
+	// 		}
+	// 	}
+	// }
 
-	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_STATUS_ST, WIFI_FLAG_STATUS_ST_SIZE, FALSE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_CLI) == 0) {
-		if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_data_tmp) == 0) {
-			// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data_tmp, &xHigherPriorityTaskWoken)) {
-			// 	// sprintf(msg_irs, "STATUS QUE Err\r\n");
-			// } else {
-			// 	// sprintf(msg_irs, "STATUS QUE OK\r\n");
-			// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLI;
-			// }
-			return;
-		}
-	}
-	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_IPD_ST, WIFI_FLAG_IPD_ST_SIZE, FALSE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_IPD) == 0) {
-		// if(ParseIPD(UsartWifiBuf, Index, &sock_data[0]) == 0) {
-		// 	// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data[0], &xHigherPriorityTaskWoken)) {
-		// 	// 	// sprintf(msg_irs, "IPD QUE Err\r\n");
-		// 	// } else {
-		// 	// 	// sprintf(msg_irs, "IPD QUE OK\r\n");
-		// 	// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_IPD;
-		// 	// }
-		// 	Index = 0;
-		// 	return;
-		// }
-	}
+	// if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_STATUS_ST, WIFI_FLAG_STATUS_ST_SIZE, FALSE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_CLI) == 0) {
+	// 	if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_data_tmp) == 0) {
+	// 		// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data_tmp, &xHigherPriorityTaskWoken)) {
+	// 		// 	// sprintf(msg_irs, "STATUS QUE Err\r\n");
+	// 		// } else {
+	// 		// 	// sprintf(msg_irs, "STATUS QUE OK\r\n");
+	// 		// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLI;
+	// 		// }
+	// 		return;
+	// 	}
+	// }
+	// if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_IPD_ST, WIFI_FLAG_IPD_ST_SIZE, FALSE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_IPD) == 0) {
+	// 	// if(ParseIPD(UsartWifiBuf, Index, &sock_data[0]) == 0) {
+	// 	// 	// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data[0], &xHigherPriorityTaskWoken)) {
+	// 	// 	// 	// sprintf(msg_irs, "IPD QUE Err\r\n");
+	// 	// 	// } else {
+	// 	// 	// 	// sprintf(msg_irs, "IPD QUE OK\r\n");
+	// 	// 	// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_IPD;
+	// 	// 	// }
+	// 	// 	Index = 0;
+	// 	// 	return;
+	// 	// }
+	// }
 }
 
 sint32_t ParseIPD(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data)

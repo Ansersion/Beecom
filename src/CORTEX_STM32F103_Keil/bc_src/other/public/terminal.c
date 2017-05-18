@@ -30,6 +30,7 @@
 #include <bc_queue.h>
 #include <panic.h>
 #include <utils.h>
+#include <wifi_clbk.h>
 
 extern TaskHandle_t DataHubHandle;
 
@@ -89,6 +90,8 @@ void TaskTerminal(void * pvParameters)
 	static BC_QueueElement qe;
 	static uint8_t * msg = UsartTermBuf;
 
+	stWifiMsgUnit testWifiMsgUnit;
+
 	if(TaskTerminalInit() != BC_OK) {
 		BC_Panic("Ternimal Init");
 	}
@@ -99,10 +102,24 @@ void TaskTerminal(void * pvParameters)
 			LED_RED_TURN();
 		}
 		// process
-		// BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_DATAHUB);
-		BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_DEFAULT);
-		// BC_MsgSetMsg(&qe, UsartTermBuf, strlen(UsartTermBuf));
-		BC_MsgSetMsg(&qe, msg, strlen((const char *)msg));
+		BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_WIFI);
+		switch(msg[0]) {
+			case 'R':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_RESET;
+				break;
+			case 'M':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_MODE;
+				testWifiMsgUnit.ClbkPara.SetModePara.Mode = WIFI_MODE_STA;
+				break;
+			case 'U':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_MUX;
+				testWifiMsgUnit.ClbkPara.SetMuxPara.Mux = WIFI_MUX_OPEN;
+				break;
+			default:
+				continue;
+				break;
+		}
+		BC_MsgSetMsg(&qe, (uint8_t *)&testWifiMsgUnit, sizeof(testWifiMsgUnit));
 		while(BC_Enqueue(BC_ModInQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
 		}
 		vTaskResume(DataHubHandle);

@@ -30,12 +30,13 @@
 #include <wifi_task.h>
 #include <wifi_irq.h>
 #include <wifi_common.h>
+#include <wifi_clbk.h>
 
 extern TaskHandle_t DataHubHandle;
 
 #define LED_GREEN_TURN() (GPIOD->ODR ^= 1<<2) // green
 
-#define BC_MOD_MYSELF BC_MOD_PHONE_APP
+#define BC_MOD_MYSELF BC_MOD_WIFI
 
 // static uint8_t UsartWifiBuf[USART_WIFI_BUF_SIZE];
 static QueueHandle_t UsartMsgQueue;
@@ -45,41 +46,49 @@ static uint32_t GotMsgFlag = BC_FALSE;
 void TaskWifiAgent(void *pvParameters)
 {
 	static BC_QueueElement qe;
-	static uint8_t * msg = UsartWifiBuf;
+	static uint8_t * wifi_msg = UsartWifiBuf;
+	static sint32_t ret = BC_OK;
 
 	if(TaskWifiAgentInit() != BC_OK) {
-		BC_Panic("AppAgent Init");
+		BC_Panic("WifiAgent Init");
 	}
 
 	while(1) {
-		while(BC_FALSE == xQueueReceive(UsartMsgQueue, &GotMsgFlag, TIMEOUT_COMMON)) {
+		while(BC_Dequeue(BC_ModOutQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
 			// Indicate led
 			LED_GREEN_TURN();
 		}
 		// BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_DEFAULT);
 		// // BC_MsgSetMsg(&qe, UsartTermBuf, strlen(UsartTermBuf));
 		// BC_MsgSetMsg(&qe, msg, strlen((const char *)msg));
-		ProcWifiMsg(&qe, msg);
-		while(BC_Enqueue(BC_ModInQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
-		}
-		vTaskResume(DataHubHandle);
-		if(BC_Dequeue(BC_ModOutQueue[BC_MOD_MYSELF], &qe, 0) == BC_TRUE) {
-			// process 
-		}
+		ret = ProcWifiMsg(&qe, wifi_msg);
+		printf("wifi task: ret=%d\r\n%s\r\n", ret, wifi_msg);
+		// if(BC_MOD_IRQ == qe.u8SrcID) {
+		// 	continue;
+		// }
+		// while(BC_Enqueue(BC_ModInQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
+		// }
+		// vTaskResume(DataHubHandle);
+		// if(BC_Dequeue(BC_ModOutQueue[BC_MOD_MYSELF], &qe, 0) == BC_TRUE) {
+		// 	// process 
+		// }
 	}
 }
 
 sint32_t TaskWifiAgentInit(void)
 {
-	UsartMsgQueue = NULL;
+	// UsartMsgQueue = NULL;
 	memset(UsartWifiBuf, 0, USART_WIFI_BUF_SIZE);
-	GotMsgFlag = BC_FALSE;
-	UsartMsgQueue = xQueueCreate(1, sizeof(GotMsgFlag));
+	// GotMsgFlag = BC_FALSE;
+	// UsartMsgQueue = xQueueCreate(1, sizeof(GotMsgFlag));
 
 	if(BCMutexInit(&WifiRecvFlagMutex) != BC_OK) {
 		return BC_ERR;
 	}
-	if(!UsartMsgQueue) {
+	// if(!UsartMsgQueue) {
+	// 	return BC_ERR;
+	// }
+	if(CheckWifiMsgUnit() != BC_OK) {
 		return BC_ERR;
 	}
 	return BC_OK;
@@ -87,7 +96,45 @@ sint32_t TaskWifiAgentInit(void)
 
 sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg)
 {
-	return BC_OK;
+	stWifiMsgUnit * msg_unit = NULL;
+	sint32_t ret = BC_OK;
+
+	if(!qe) {
+		return -1;
+	}
+	if(!wifi_msg) {
+		return -2;
+	}
+
+	if(BC_MOD_IRQ != qe->u8SrcID) {
+		// msg from datahub
+		if(qe->u16MsgLen != sizeof(stWifiMsgUnit)) {
+			return -11;
+		}
+		msg_unit = (stWifiMsgUnit *)(qe->pText);
+		switch(msg_unit->WifiClbkCmd) {
+			case WIFI_CLBK_CMD_RESET:
+				ret = BC_WifiReset(NULL);
+				break;
+			case WIFI_CLBK_CMD_SET_MODE:
+				ret = BC_WifiSetMode(msg_unit->ClbkPara.SetModePara.Mode, NULL);
+				break;
+			case WIFI_CLBK_CMD_SET_NET:
+				ret = BC_WifiSetNet(msg_unit->ClbkPara.SetNetPara.Ssid, msg_unit->ClbkPara.SetNetPara.Pwd, NULL);
+				break;
+			case WIFI_CLBK_CMD_SET_MUX:
+				ret = BC_WifiSetMux(msg_unit->ClbkPara.SetMuxPara.Mux, NULL);
+				break;
+			case WIFI_CLBK_CMD_SET_SERV:
+				ret = BC_WifiSetServ(msg_unit->ClbkPara.ServPara.ServMode, msg_unit->ClbkPara.ServPara.Port, NULL);
+				break;
+			default:
+				break;
+		}
+	} else {
+		// msg from irq
+	}
+	return ret;
 }
 
 sint32_t BC_Atoi(char n)

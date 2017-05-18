@@ -26,7 +26,7 @@
 #include <wifi_irq.h>
 
 /* UART interrupt handler. */
-volatile void IrqUsartWifi( void );
+// volatile void IrqUsartWifi( void );
 
 void TaskWifiAgent(void *para);
 sint32_t TaskWifiAgentInit(void);

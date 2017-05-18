@@ -7,11 +7,15 @@
 enum BC_ModID {
 	BC_MOD_DEFAULT=0,
 	BC_MOD_DATAHUB,
+	BC_MOD_WIFI,
 	BC_MOD_PHONE_APP,
 	BC_MOD_ZIGBEE,
 	BC_MOD_BLUETOOTH,
 	BC_MOD_NET_SERVER,
 	BC_MOD_TERMINAL, 
+	// indicate the queue msg from IRQ
+	BC_MOD_IRQ,
+	// invalid mod, to define the limit
 	BC_MOD_INVALID,
 };
 

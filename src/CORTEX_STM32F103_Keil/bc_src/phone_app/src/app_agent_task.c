@@ -43,7 +43,7 @@ void TaskAppAgent(void *pvParameters)
 
 	while(BC_TRUE) {
 		vTaskDelay(delay_ms);
-		// printf("TaskZigbeeAgent\r\n");
+		// printf("TaskAppAgent\r\n");
 	}
 }
 // volatile void IrqUsartWifi( void )
