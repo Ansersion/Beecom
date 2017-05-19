@@ -80,10 +80,10 @@ I (.\STM32F10xFWLib\inc\stm32f10x_spi.h)(0x58F2D2D6)
 I (.\STM32F10xFWLib\inc\stm32f10x_systick.h)(0x58F2D2D6)
 I (.\STM32F10xFWLib\inc\stm32f10x_usart.h)(0x58F2D2D6)
 I (.\bc_src\other\config\bc.h)(0x591B01AF)
-I (.\bc_src\other\config\bc_init.h)(0x59044CD2)
+I (.\bc_src\other\config\bc_init.h)(0x591F051C)
 I (.\bc_src\other\public\beecomint.h)(0x590454DC)
 I (.\bc_src\wifi\inc\wifi_task.h)(0x591DDDED)
-I (.\bc_src\wifi\inc\wifi_common.h)(0x591DBCEF)
+I (.\bc_src\wifi\inc\wifi_common.h)(0x591F20A2)
 I (.\bc_src\other\public\bc_type.h)(0x591DD12D)
 I (.\bc_src\wifi\inc\wifi_irq.h)(0x591D9AE2)
 I (.\bc_src\other\irq\irq.h)(0x590598A1)
@@ -101,7 +101,7 @@ I (.\bc_src\other\public\terminal.h)(0x591AFE3C)
 F (.\bc_src\other\irq\STM32F10x.s)(0x59007B21)(--cpu Cortex-M3 -g --apcs=interwork -I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include--list .\target\stm32f10x.lst --xref -o .\target\stm32f10x.o --depend .\target\stm32f10x.d)
 F (.\bc_src\other\irq\irq.c)(0x59009CD8)(-c --cpu Cortex-M3 -g -O3 --apcs=interwork -I..\CORTEX_STM32F103_Keil -I.\STM32F10xFWLib\inc -I.\bc_src\main\inc -I.\bc_src\bluetooth\inc -I.\bc_src\datahub\inc -I.\bc_src\net_server\inc -I.\bc_src\phone_app\inc -I.\bc_src\other\irq -I.\bc_src\other\public -I.\bc_src\other\config -I.\bc_src\freertos_src\include -I.\bc_src\freertos_src\portable\RVDS\ARM_CM3 -I.\bc_src\zigbee\inc -I.\bc_src\wifi\inc-I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include-DSTM32F10X_HD -DRVDS_ARMCM3_LM3S102 -o .\target\irq.o --omf_browse .\target\irq.crf --depend .\target\irq.d)
 F (.\bc_src\other\config\bc_init.c)(0x59044E29)(-c --cpu Cortex-M3 -g -O3 --apcs=interwork -I..\CORTEX_STM32F103_Keil -I.\STM32F10xFWLib\inc -I.\bc_src\main\inc -I.\bc_src\bluetooth\inc -I.\bc_src\datahub\inc -I.\bc_src\net_server\inc -I.\bc_src\phone_app\inc -I.\bc_src\other\irq -I.\bc_src\other\public -I.\bc_src\other\config -I.\bc_src\freertos_src\include -I.\bc_src\freertos_src\portable\RVDS\ARM_CM3 -I.\bc_src\zigbee\inc -I.\bc_src\wifi\inc-I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include-DSTM32F10X_HD -DRVDS_ARMCM3_LM3S102 -o .\target\bc_init.o --omf_browse .\target\bc_init.crf --depend .\target\bc_init.d)
-I (.\bc_src\other\config\bc_init.h)(0x59044CD2)
+I (.\bc_src\other\config\bc_init.h)(0x591F051C)
 I (.\STM32F10xFWLib\inc\stm32f10x_nvic.h)(0x58F2D2D6)
 I (.\STM32F10xFWLib\inc\stm32f10x_map.h)(0x58F2D2D6)
 I (.\STM32F10xFWLib\inc\stm32f10x_conf.h)(0x58F2D2D7)
@@ -158,7 +158,7 @@ I (.\bc_src\other\public\bc_queue.h)(0x590E8EBB)
 I (.\bc_src\other\public\panic.h)(0x590E92CC)
 I (.\bc_src\other\public\utils.h)(0x591AF7F9)
 I (.\bc_src\wifi\inc\wifi_clbk.h)(0x591DBDBA)
-I (.\bc_src\wifi\inc\wifi_common.h)(0x591DBCEF)
+I (.\bc_src\wifi\inc\wifi_common.h)(0x591F20A2)
 F (.\bc_src\other\public\panic.c)(0x590E92A8)(-c --cpu Cortex-M3 -g -O3 --apcs=interwork -I..\CORTEX_STM32F103_Keil -I.\STM32F10xFWLib\inc -I.\bc_src\main\inc -I.\bc_src\bluetooth\inc -I.\bc_src\datahub\inc -I.\bc_src\net_server\inc -I.\bc_src\phone_app\inc -I.\bc_src\other\irq -I.\bc_src\other\public -I.\bc_src\other\config -I.\bc_src\freertos_src\include -I.\bc_src\freertos_src\portable\RVDS\ARM_CM3 -I.\bc_src\zigbee\inc -I.\bc_src\wifi\inc-I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include-DSTM32F10X_HD -DRVDS_ARMCM3_LM3S102 -o .\target\panic.o --omf_browse .\target\panic.crf --depend .\target\panic.d)
 I (D:\installed\mdk5\ARM\ARMCC\include\stdio.h)(0x52FDD27E)
 I (.\bc_src\other\public\panic.h)(0x590E92CC)
@@ -468,7 +468,7 @@ I (.\bc_src\freertos_src\include\../../freertos_src/portable/RVDS/ARM_CM3/portma
 I (.\bc_src\freertos_src\include\mpu_wrappers.h)(0x58F2D2D7)
 I (.\bc_src\freertos_src\include\task.h)(0x58F2D2D7)
 I (.\bc_src\freertos_src\include\list.h)(0x58F2D2D7)
-F (.\bc_src\wifi\src\wifi_common.c)(0x591DBD1D)(-c --cpu Cortex-M3 -g -O3 --apcs=interwork -I..\CORTEX_STM32F103_Keil -I.\STM32F10xFWLib\inc -I.\bc_src\main\inc -I.\bc_src\bluetooth\inc -I.\bc_src\datahub\inc -I.\bc_src\net_server\inc -I.\bc_src\phone_app\inc -I.\bc_src\other\irq -I.\bc_src\other\public -I.\bc_src\other\config -I.\bc_src\freertos_src\include -I.\bc_src\freertos_src\portable\RVDS\ARM_CM3 -I.\bc_src\zigbee\inc -I.\bc_src\wifi\inc-I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include-DSTM32F10X_HD -DRVDS_ARMCM3_LM3S102 -o .\target\wifi_common.o --omf_browse .\target\wifi_common.crf --depend .\target\wifi_common.d)
+F (.\bc_src\wifi\src\wifi_common.c)(0x591F205C)(-c --cpu Cortex-M3 -g -O3 --apcs=interwork -I..\CORTEX_STM32F103_Keil -I.\STM32F10xFWLib\inc -I.\bc_src\main\inc -I.\bc_src\bluetooth\inc -I.\bc_src\datahub\inc -I.\bc_src\net_server\inc -I.\bc_src\phone_app\inc -I.\bc_src\other\irq -I.\bc_src\other\public -I.\bc_src\other\config -I.\bc_src\freertos_src\include -I.\bc_src\freertos_src\portable\RVDS\ARM_CM3 -I.\bc_src\zigbee\inc -I.\bc_src\wifi\inc-I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include-DSTM32F10X_HD -DRVDS_ARMCM3_LM3S102 -o .\target\wifi_common.o --omf_browse .\target\wifi_common.crf --depend .\target\wifi_common.d)
 I (D:\installed\mdk5\ARM\ARMCC\include\string.h)(0x52FDD27E)
 I (.\bc_src\freertos_src\include\FreeRTOS.h)(0x58F2D2D7)
 I (D:\installed\mdk5\ARM\ARMCC\include\stddef.h)(0x52FDD27E)
@@ -486,7 +486,7 @@ I (.\STM32F10xFWLib\inc\stm32f10x_map.h)(0x58F2D2D6)
 I (.\STM32F10xFWLib\inc\stm32f10x_conf.h)(0x58F2D2D7)
 I (.\STM32F10xFWLib\inc\stm32f10x_type.h)(0x58F2D2D6)
 I (.\STM32F10xFWLib\inc\cortexm3_macro.h)(0x58F2D2D6)
-I (.\bc_src\wifi\inc\wifi_common.h)(0x591DBCEF)
+I (.\bc_src\wifi\inc\wifi_common.h)(0x591F20A2)
 I (.\bc_src\freertos_src\include\queue.h)(0x58F2D2D7)
 I (.\bc_src\other\public\bc_type.h)(0x591DD12D)
 I (.\bc_src\other\public\beecomint.h)(0x590454DC)
@@ -496,7 +496,7 @@ I (.\bc_src\other\irq\irq.h)(0x590598A1)
 I (.\bc_src\other\public\mutex.h)(0x591B0CE6)
 I (.\bc_src\other\public\terminal.h)(0x591AFE3C)
 I (D:\installed\mdk5\ARM\ARMCC\include\stdio.h)(0x52FDD27E)
-F (.\bc_src\wifi\src\wifi_irq.c)(0x591DC337)(-c --cpu Cortex-M3 -g -O3 --apcs=interwork -I..\CORTEX_STM32F103_Keil -I.\STM32F10xFWLib\inc -I.\bc_src\main\inc -I.\bc_src\bluetooth\inc -I.\bc_src\datahub\inc -I.\bc_src\net_server\inc -I.\bc_src\phone_app\inc -I.\bc_src\other\irq -I.\bc_src\other\public -I.\bc_src\other\config -I.\bc_src\freertos_src\include -I.\bc_src\freertos_src\portable\RVDS\ARM_CM3 -I.\bc_src\zigbee\inc -I.\bc_src\wifi\inc-I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include-DSTM32F10X_HD -DRVDS_ARMCM3_LM3S102 -o .\target\wifi_irq.o --omf_browse .\target\wifi_irq.crf --depend .\target\wifi_irq.d)
+F (.\bc_src\wifi\src\wifi_irq.c)(0x591F20C5)(-c --cpu Cortex-M3 -g -O3 --apcs=interwork -I..\CORTEX_STM32F103_Keil -I.\STM32F10xFWLib\inc -I.\bc_src\main\inc -I.\bc_src\bluetooth\inc -I.\bc_src\datahub\inc -I.\bc_src\net_server\inc -I.\bc_src\phone_app\inc -I.\bc_src\other\irq -I.\bc_src\other\public -I.\bc_src\other\config -I.\bc_src\freertos_src\include -I.\bc_src\freertos_src\portable\RVDS\ARM_CM3 -I.\bc_src\zigbee\inc -I.\bc_src\wifi\inc-I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include-DSTM32F10X_HD -DRVDS_ARMCM3_LM3S102 -o .\target\wifi_irq.o --omf_browse .\target\wifi_irq.crf --depend .\target\wifi_irq.d)
 I (D:\installed\mdk5\ARM\ARMCC\include\string.h)(0x52FDD27E)
 I (D:\installed\mdk5\ARM\ARMCC\include\ctype.h)(0x52FDD27E)
 I (D:\installed\mdk5\ARM\ARMCC\include\stdlib.h)(0x52FDD27E)
@@ -522,10 +522,10 @@ I (.\bc_src\freertos_src\include\task.h)(0x58F2D2D7)
 I (.\bc_src\freertos_src\include\list.h)(0x58F2D2D7)
 I (.\bc_src\wifi\inc\wifi_irq.h)(0x591D9AE2)
 I (.\bc_src\other\irq\irq.h)(0x590598A1)
-I (.\bc_src\wifi\inc\wifi_common.h)(0x591DBCEF)
+I (.\bc_src\wifi\inc\wifi_common.h)(0x591F20A2)
 I (.\bc_src\freertos_src\include\queue.h)(0x58F2D2D7)
 I (.\bc_src\other\public\mutex.h)(0x591B0CE6)
-F (.\bc_src\wifi\src\wifi_task.c)(0x591DE0DF)(-c --cpu Cortex-M3 -g -O3 --apcs=interwork -I..\CORTEX_STM32F103_Keil -I.\STM32F10xFWLib\inc -I.\bc_src\main\inc -I.\bc_src\bluetooth\inc -I.\bc_src\datahub\inc -I.\bc_src\net_server\inc -I.\bc_src\phone_app\inc -I.\bc_src\other\irq -I.\bc_src\other\public -I.\bc_src\other\config -I.\bc_src\freertos_src\include -I.\bc_src\freertos_src\portable\RVDS\ARM_CM3 -I.\bc_src\zigbee\inc -I.\bc_src\wifi\inc-I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include-DSTM32F10X_HD -DRVDS_ARMCM3_LM3S102 -o .\target\wifi_task.o --omf_browse .\target\wifi_task.crf --depend .\target\wifi_task.d)
+F (.\bc_src\wifi\src\wifi_task.c)(0x591F0497)(-c --cpu Cortex-M3 -g -O3 --apcs=interwork -I..\CORTEX_STM32F103_Keil -I.\STM32F10xFWLib\inc -I.\bc_src\main\inc -I.\bc_src\bluetooth\inc -I.\bc_src\datahub\inc -I.\bc_src\net_server\inc -I.\bc_src\phone_app\inc -I.\bc_src\other\irq -I.\bc_src\other\public -I.\bc_src\other\config -I.\bc_src\freertos_src\include -I.\bc_src\freertos_src\portable\RVDS\ARM_CM3 -I.\bc_src\zigbee\inc -I.\bc_src\wifi\inc-I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include-DSTM32F10X_HD -DRVDS_ARMCM3_LM3S102 -o .\target\wifi_task.o --omf_browse .\target\wifi_task.crf --depend .\target\wifi_task.d)
 I (D:\installed\mdk5\ARM\ARMCC\include\string.h)(0x52FDD27E)
 I (.\STM32F10xFWLib\inc\stm32f10x_gpio.h)(0x58F2D2D6)
 I (.\STM32F10xFWLib\inc\stm32f10x_map.h)(0x58F2D2D6)
@@ -562,12 +562,12 @@ I (.\STM32F10xFWLib\inc\stm32f10x_nvic.h)(0x58F2D2D6)
 I (.\STM32F10xFWLib\inc\stm32f10x_rcc.h)(0x58F2D2D6)
 I (.\STM32F10xFWLib\inc\stm32f10x_spi.h)(0x58F2D2D6)
 I (.\STM32F10xFWLib\inc\stm32f10x_systick.h)(0x58F2D2D6)
-I (.\bc_src\wifi\inc\wifi_common.h)(0x591DBCEF)
+I (.\bc_src\wifi\inc\wifi_common.h)(0x591F20A2)
 I (.\bc_src\wifi\inc\wifi_irq.h)(0x591D9AE2)
 I (.\bc_src\wifi\inc\wifi_clbk.h)(0x591DBDBA)
 F (.\bc_src\wifi\src\wifi_clbk.c)(0x591DBDC0)(-c --cpu Cortex-M3 -g -O3 --apcs=interwork -I..\CORTEX_STM32F103_Keil -I.\STM32F10xFWLib\inc -I.\bc_src\main\inc -I.\bc_src\bluetooth\inc -I.\bc_src\datahub\inc -I.\bc_src\net_server\inc -I.\bc_src\phone_app\inc -I.\bc_src\other\irq -I.\bc_src\other\public -I.\bc_src\other\config -I.\bc_src\freertos_src\include -I.\bc_src\freertos_src\portable\RVDS\ARM_CM3 -I.\bc_src\zigbee\inc -I.\bc_src\wifi\inc-I D:\installed\mdk5\ARM\RV31\INC-I D:\installed\mdk5\ARM\PACK\ARM\CMSIS\3.20.4\CMSIS\Include-I D:\installed\mdk5\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include-DSTM32F10X_HD -DRVDS_ARMCM3_LM3S102 -o .\target\wifi_clbk.o --omf_browse .\target\wifi_clbk.crf --depend .\target\wifi_clbk.d)
 I (.\bc_src\wifi\inc\wifi_clbk.h)(0x591DBDBA)
-I (.\bc_src\wifi\inc\wifi_common.h)(0x591DBCEF)
+I (.\bc_src\wifi\inc\wifi_common.h)(0x591F20A2)
 I (.\bc_src\freertos_src\include\FreeRTOS.h)(0x58F2D2D7)
 I (D:\installed\mdk5\ARM\ARMCC\include\stddef.h)(0x52FDD27E)
 I (D:\installed\mdk5\ARM\ARMCC\include\stdint.h)(0x52FDD27E)

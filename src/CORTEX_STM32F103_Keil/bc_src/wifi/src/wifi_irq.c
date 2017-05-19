@@ -13,16 +13,23 @@
 //   limitations under the License.
 //
 
+// STD headers
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 
+// STM32 headers
 #include <stm32f10x_usart.h>
 
+// Beecom headers
 #include <utils.h>
 #include <bc_type.h>
 #include <wifi_irq.h>
 #include <mutex.h>
+#include <wifi_common.h>
+
+extern BC_SocketData sock_data[];
+extern BC_SocketData sock_serv;
 
 uint8_t UsartWifiBuf[USART_WIFI_BUF_SIZE];
 uint32_t WifiRecvFlag = 0;
@@ -48,7 +55,6 @@ volatile void IrqUsartWifi(void)
 	static uint16_t RxData=0;
 	static sint32_t u32CurrentSockId = -1;
 	BC_SocketData sock_data_tmp;
-	// BaseType_t xHigherPriorityTaskWoken;
 
 	if(USART_GetITStatus(USART_WIFI, USART_IT_RXNE) == RESET) {
 		return;
@@ -80,42 +86,41 @@ volatile void IrqUsartWifi(void)
 	}
 
 	// client connects to local server
-	// if(Index >= 1) {
-	// 	if(isdigit(UsartWifiBuf[0])) {
-	// 		u32CurrentSockId = BC_Atoi(UsartWifiBuf[0]);
-	// 		if(u32CurrentSockId != 0) {
-	// 			return;
-	// 		}
-	// 		if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CONN_END, WIFI_FLAG_CONN_END_SIZE, TRUE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_CONNECT) == 0) {
-	// 			// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data[u32CurrentSockId], &xHigherPriorityTaskWoken)) {
-	// 			// 	// sprintf(msg_irs, "CONN QUE Err\r\n");
-	// 			// } else {
-	// 			// 	// sprintf(msg_irs, "CONN QUE OK\r\n");
-	// 			// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CONNECT;
-	// 			// }
-	// 			Index = 0;
-	// 			return;
-	// 		}
-	// 		if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CLOSED_END, WIFI_FLAG_CLOSED_END_SIZE, TRUE)) {
-	// 			// sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
-	// 			WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLOSED;
-	// 			Index = 0;
-	// 			return;
-	// 		}
-	// 	}
-	// }
+	if(Index >= 1) {
+		if(isdigit(UsartWifiBuf[0])) {
+			u32CurrentSockId = BC_Atoi(UsartWifiBuf[0]);
+			if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CONN_END, WIFI_FLAG_CONN_END_SIZE, TRUE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_CONNECT) == 0) {
+				sock_serv.wifi_id = u32CurrentSockId;
+				if(pdTRUE == xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+					// sprintf(msg_irs, "CONN QUE Err\r\n");
+				} else {
+					// sprintf(msg_irs, "CONN QUE OK\r\n");
+					// WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CONNECT;
+				}
+				Index = 0;
+				return;
+			}
+			if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CLOSED_END, WIFI_FLAG_CLOSED_END_SIZE, TRUE)) {
+				// sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
+				// WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLOSED;
+				sock_data[u32CurrentSockId].valid = BC_FALSE;
+				Index = 0;
+				return;
+			}
+		}
+	}
 
-	// if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_STATUS_ST, WIFI_FLAG_STATUS_ST_SIZE, FALSE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_CLI) == 0) {
-	// 	if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_data_tmp) == 0) {
-	// 		// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data_tmp, &xHigherPriorityTaskWoken)) {
-	// 		// 	// sprintf(msg_irs, "STATUS QUE Err\r\n");
-	// 		// } else {
-	// 		// 	// sprintf(msg_irs, "STATUS QUE OK\r\n");
-	// 		// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLI;
-	// 		// }
-	// 		return;
-	// 	}
-	// }
+	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_STATUS_ST, WIFI_FLAG_STATUS_ST_SIZE, FALSE)) {
+		if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_data_tmp) == 0) {
+			// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data_tmp, &xHigherPriorityTaskWoken)) {
+			// 	// sprintf(msg_irs, "STATUS QUE Err\r\n");
+			// } else {
+			// 	// sprintf(msg_irs, "STATUS QUE OK\r\n");
+			// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLI;
+			// }
+			return;
+		}
+	}
 	// if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_IPD_ST, WIFI_FLAG_IPD_ST_SIZE, FALSE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_IPD) == 0) {
 	// 	// if(ParseIPD(UsartWifiBuf, Index, &sock_data[0]) == 0) {
 	// 	// 	// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data[0], &xHigherPriorityTaskWoken)) {

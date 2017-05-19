@@ -22,7 +22,7 @@ void LedInit(void);
 void UsartTermInit(uint32_t bound);
 void UsartWifiInit(uint32_t bound);
 void BufInit(void);
-void SocketInit(void);
+// void SocketInit(void);
 sint32_t BC_QueueInit(void);
 sint32_t BC_MutexInit(void);
 

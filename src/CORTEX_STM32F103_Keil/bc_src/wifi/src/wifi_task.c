@@ -39,9 +39,10 @@ extern TaskHandle_t DataHubHandle;
 #define BC_MOD_MYSELF BC_MOD_WIFI
 
 // static uint8_t UsartWifiBuf[USART_WIFI_BUF_SIZE];
-static QueueHandle_t UsartMsgQueue;
-static uint32_t GotMsgFlag = BC_FALSE;
+// static QueueHandle_t UsartMsgQueue;
+// static uint32_t GotMsgFlag = BC_FALSE;
 // static BC_Mutex mutex;
+uint8_t WifiPanicMsg[64];
 
 void TaskWifiAgent(void *pvParameters)
 {
@@ -49,8 +50,11 @@ void TaskWifiAgent(void *pvParameters)
 	static uint8_t * wifi_msg = UsartWifiBuf;
 	static sint32_t ret = BC_OK;
 
-	if(TaskWifiAgentInit() != BC_OK) {
-		BC_Panic("WifiAgent Init");
+	ret = TaskWifiAgentInit();
+	if(ret != BC_OK) {
+		sprintf(WifiPanicMsg, "WifiAgent Init: ErrCode=%d", ret);
+		/* Never return */
+		BC_Panic(WifiPanicMsg);
 	}
 
 	while(1) {
@@ -63,12 +67,12 @@ void TaskWifiAgent(void *pvParameters)
 		// BC_MsgSetMsg(&qe, msg, strlen((const char *)msg));
 		ret = ProcWifiMsg(&qe, wifi_msg);
 		printf("wifi task: ret=%d\r\n%s\r\n", ret, wifi_msg);
-		// if(BC_MOD_IRQ == qe.u8SrcID) {
-		// 	continue;
-		// }
-		// while(BC_Enqueue(BC_ModInQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
-		// }
-		// vTaskResume(DataHubHandle);
+		if(BC_MOD_IRQ != qe.u8SrcID) {
+			continue;
+		}
+		while(BC_Enqueue(BC_ModInQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
+		}
+		vTaskResume(DataHubHandle);
 		// if(BC_Dequeue(BC_ModOutQueue[BC_MOD_MYSELF], &qe, 0) == BC_TRUE) {
 		// 	// process 
 		// }
@@ -83,13 +87,13 @@ sint32_t TaskWifiAgentInit(void)
 	// UsartMsgQueue = xQueueCreate(1, sizeof(GotMsgFlag));
 
 	if(BCMutexInit(&WifiRecvFlagMutex) != BC_OK) {
-		return BC_ERR;
+		return -1;
 	}
-	// if(!UsartMsgQueue) {
-	// 	return BC_ERR;
-	// }
+	if(SocketInit() != BC_OK) {
+		return -2;
+	}
 	if(CheckWifiMsgUnit() != BC_OK) {
-		return BC_ERR;
+		return -3;
 	}
 	return BC_OK;
 }

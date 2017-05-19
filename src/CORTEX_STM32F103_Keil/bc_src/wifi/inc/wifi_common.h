@@ -24,8 +24,14 @@
 // Beecom headers
 #include <bc_type.h>
 
-#define BC_MAX_SOCKET_NUM 		5
-#define BC_MAX_WIFI_FAIL_COUNT 	5
+#define BC_MAX_SOCKET_NUM 			5
+#define BC_MAX_SOCKET_BUF_SIZE 		256
+#define BC_MAX_WIFI_FAIL_COUNT 		5
+
+/************************
+  Only "1" now is supported
+*************************/
+#define SOCK_DATA_QUE_NUM 			1
 
 #define ASSERT_SOCK_VALID(s) ((s) >= 0 && (s) < BC_MAX_SOCKET_NUM)
 
@@ -47,7 +53,7 @@ typedef struct BC_Sockaddr {
 }BC_Sockaddr;
 
 typedef struct BC_SocketData {
-	uint32_t msg_flag;
+	// uint32_t msg_flag;
 	BC_Sockaddr addr;
 	bool_t valid;
 	// bool_t is_server;
@@ -64,23 +70,29 @@ typedef enum WIFI_MODE {
 	WIFI_MODE_STA = 1,
 	WIFI_MODE_AP, 
 	WIFI_MODE_AP_STA, 
+	WIFI_MODE_INVALID,
 }WIFI_MODE;
 
 typedef enum WIFI_MUX {
 	WIFI_MUX_CLOSE = 0,
 	WIFI_MUX_OPEN,
+	WIFI_MUX_INVALID,
 }WIFI_MUX;
 
 typedef enum WIFI_SERVER {
 	WIFI_SERVER_CLOSE=0,
 	WIFI_SERVER_OPEN,
+	WIFI_SERVER_INVALID,
 }WIFI_SERVER;
 
+const WIFI_MODE 	GetWifiModeInfo(void);
+const WIFI_SERVER 	GetWifiServerInfo(void);
 sint32_t BC_WifiReset(uint32_t * timeout);
 sint32_t BC_WifiSetMode(WIFI_MODE mode, uint32_t * timeout);
 sint32_t BC_WifiSetNet(uint8_t * ssid, uint8_t * pwd, uint32_t * timeout);
 sint32_t BC_WifiSetMux(WIFI_MUX mux_mode, uint32_t * timeout);
 sint32_t BC_WifiSetServ(WIFI_SERVER server_mode, uint16_t port, uint32_t * timeout);
+
 // wifi APIs
 // They are similar to linux socket
 // just for using the linux net code procedure
@@ -96,6 +108,12 @@ sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags);
 sint32_t BC_Send(sint32_t sockfd, const void * buff, uint32_t nbytes, sint32_t flags);
 
 sint32_t BC_Atoi(char n);
+
+sint32_t SocketInit(void);
+// /****************************
+//   Must run after "SocketInit"
+// *****************************/
+// sint32_t SockQueueInit(void);
 
 #endif
 

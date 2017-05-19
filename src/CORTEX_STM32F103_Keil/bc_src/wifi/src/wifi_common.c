@@ -29,7 +29,23 @@
 #include <terminal.h>
 #include <mutex.h>
 
+static WIFI_MODE wifi_mode = WIFI_MODE_INVALID;
+static WIFI_MODE wifi_server = WIFI_SERVER_INVALID; 
+
 BC_SocketData sock_data[BC_MAX_SOCKET_NUM];
+// QueueHandle_t sock_queue[BC_MAX_SOCKET_NUM];
+BC_SocketData sock_serv;
+/**************************
+  It's really a dull way to
+  define the buffer.
+  All of "BC_MAX_SOCKET_NUM"
+***************************/
+uint8_t sock_buf_0[BC_MAX_SOCKET_BUF_SIZE];
+uint8_t sock_buf_1[BC_MAX_SOCKET_BUF_SIZE];
+uint8_t sock_buf_2[BC_MAX_SOCKET_BUF_SIZE];
+uint8_t sock_buf_3[BC_MAX_SOCKET_BUF_SIZE];
+uint8_t sock_buf_4[BC_MAX_SOCKET_BUF_SIZE];
+
 static sint8_t pu8CmdMsg[128];
 
 static const sint8_t * WifiCmdReset = "AT+RST\r\n";
@@ -37,6 +53,16 @@ static const sint8_t * WifiCmdSetMode = "AT+CWMODE=%d\r\n";
 static const sint8_t * WifiCmdSetNet = "AT+CWJAP=\"%s\",\"%s\"\r\n";
 static const sint8_t * WifiCmdSetMux = "AT+CIPMUX=%d\r\n";
 static const sint8_t * WifiCmdSetServ = "AT+CIPSERVER=%d,%d\r\n";
+
+const WIFI_MODE GetWifiModeInfo(void)
+{
+	return wifi_mode;
+}
+
+const WIFI_SERVER GetWifiServerInfo(void)
+{
+	return wifi_server;
+}
 
 sint32_t BC_WifiReset(uint32_t * timeout)
 {
@@ -98,6 +124,9 @@ sint32_t BC_WifiSetMode(WIFI_MODE mode, uint32_t * timeout)
 {
 	sint32_t ret = BC_OK;
 	uint32_t fail_count = 0;
+	if(WIFI_MODE_INVALID == mode) {
+		return -11;
+	}
 
 	while(1) {
 		// check max failed count
@@ -119,6 +148,7 @@ sint32_t BC_WifiSetMode(WIFI_MODE mode, uint32_t * timeout)
 			if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK) {
 				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
 				BCMutexUnlock(&WifiRecvFlagMutex);
+				wifi_mode = mode;
 				ret = BC_OK;
 				break;
 			// check if setting error
@@ -195,6 +225,10 @@ sint32_t BC_WifiSetMux(WIFI_MUX mux_mode, uint32_t * timeout)
 	sint32_t ret = BC_OK;
 	uint32_t fail_count = 0;
 
+	if(mux_mode == WIFI_MUX_INVALID) {
+		return -11;
+	}
+
 	while(1) {
 		// check max failed count
 		if(++fail_count > WIFI_SET_MUX_MAX_FAIL_COUNT) {
@@ -243,6 +277,10 @@ sint32_t BC_WifiSetServ(WIFI_SERVER server_mode, uint16_t port, uint32_t * timeo
 	sint32_t ret = BC_OK;
 	uint32_t fail_count = 0;
 
+	if(server_mode == WIFI_SERVER_INVALID) {
+		return -11;
+	}
+
 	while(1) {
 		// check max failed count
 		if(++fail_count > WIFI_SET_SERV_MAX_FAIL_COUNT) {
@@ -263,6 +301,7 @@ sint32_t BC_WifiSetServ(WIFI_SERVER server_mode, uint16_t port, uint32_t * timeo
 			if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK) {
 				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
 				BCMutexUnlock(&WifiRecvFlagMutex);
+				wifi_server = server_mode;
 				ret = BC_OK;
 				break;
 			// check if setting error
@@ -291,7 +330,7 @@ sint32_t BC_Socket(sint32_t family, sint32_t type, sint32_t protocol)
 	int i;
 	// sock_data[0]: for server
 	// sock_data[BC_MAX_SOCKET_NUM-1]: for client to connect internet
-	for(i = 1; i < BC_MAX_SOCKET_NUM - 1; i++) {
+	for(i = 0; i < BC_MAX_SOCKET_NUM - 1; i++) {
 		if(BC_TRUE != sock_data[i].valid) {
 			sock_data[i].valid = BC_TRUE;
 			return i;
@@ -330,20 +369,20 @@ sint32_t BC_Listen(sint32_t sockfd, sint32_t backlog)
 	}
 	sock_data[sockfd].backlog = backlog;
 
-	while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
-		sprintf(pu8CmdMsg, "AT+CIPSERVER=1,%d\r\n", sock_data[sockfd].addr.sin_port);
-		uputs(USART_WIFI, pu8CmdMsg);
-		vTaskDelay(delay_ms);
-		if(fail_count++ > BC_MAX_WIFI_FAIL_COUNT) {
-			sprintf(pu8CmdMsg, "AT+CIPSERVER=1,%d: Error\r\n", sock_data[sockfd].addr.sin_port);
-			// uputs(USART_TERMINAL, pu8CmdMsg);
-			return -4;
-		}
-	}
-	if(sockfd != 0) {
-		// uputs(USART_TERMINAL, "Error: Only sockfd(LinkNo.)==0 can be server\r\n");
-		return -5;
-	}
+	// while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
+	// 	sprintf(pu8CmdMsg, "AT+CIPSERVER=1,%d\r\n", sock_data[sockfd].addr.sin_port);
+	// 	uputs(USART_WIFI, pu8CmdMsg);
+	// 	vTaskDelay(delay_ms);
+	// 	if(fail_count++ > BC_MAX_WIFI_FAIL_COUNT) {
+	// 		sprintf(pu8CmdMsg, "AT+CIPSERVER=1,%d: Error\r\n", sock_data[sockfd].addr.sin_port);
+	// 		// uputs(USART_TERMINAL, pu8CmdMsg);
+	// 		return -4;
+	// 	}
+	// }
+	// if(sockfd != 0) {
+	// 	// uputs(USART_TERMINAL, "Error: Only sockfd(LinkNo.)==0 can be server\r\n");
+	// 	return -5;
+	// }
 	// sock_data[sockfd].is_server = TRUE;
 	WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
 
@@ -410,7 +449,7 @@ sint32_t BC_Close(sint32_t sockfd)
 	}
 	sprintf(pu8CmdMsg, "AT+CIPCLOSE=%d\r\n", sockfd);
 	uputs(USART_WIFI, pu8CmdMsg);
-	// sock_data[sockfd].valid = FALSE;
+	sock_data[sockfd].valid = BC_FALSE;
 	return 0;
 }
 
@@ -481,4 +520,47 @@ sint32_t BC_Send(sint32_t sockfd, const void * buff, uint32_t nbytes, sint32_t f
 	return nbytes;
 }
 
+sint32_t SocketInit(void)
+{
+	uint32_t i;
+
+	for(i = 0; i < BC_MAX_SOCKET_NUM; i++) {
+		memset(&sock_data[i], 0, sizeof(BC_SocketData));
+		sock_data[i].queue_handle = xQueueCreate(SOCK_DATA_QUE_NUM, sizeof(BC_SocketData));
+		if(NULL == sock_data[i].queue_handle) {
+			return BC_ERR;
+		}
+	}
+	// BC_MAX_SOCKET_NUM == 5;
+	sock_data[0].buf = sock_buf_0;
+	sock_data[1].buf = sock_buf_1;
+	sock_data[2].buf = sock_buf_2;
+	sock_data[3].buf = sock_buf_3;
+	sock_data[4].buf = sock_buf_4;
+
+	// set sock_data[0] to be the server socket
+	memset(&sock_serv, 0, sizeof(BC_SocketData));
+	sock_serv.queue_handle = xQueueCreate(BC_MAX_SOCKET_NUM, sizeof(BC_SocketData));
+	if(NULL == sock_serv.queue_handle) {
+		return BC_ERR;
+	}
+
+	return BC_OK;
+}
+
+// sint32_t SockQueueInit(void)
+// {
+// 	sint32_t result = BC_OK;
+// 	uint32_t i = 0;
+// 
+// 	for(i = 0; i < BC_MAX_SOCKET_NUM; i++) {
+// 		sock_queue[i] = xQueueCreate(1, sizeof(BC_SocketData));
+// 		if(NULL == sock_queue[i]) {
+// 			return BC_ERR;
+// 		}
+// 		sock_queue[i].queue_handle = sock_queue[i];
+// 	}
+// 
+// 	return result;
+// }
 
