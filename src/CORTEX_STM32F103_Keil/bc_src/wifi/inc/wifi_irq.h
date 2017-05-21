@@ -8,16 +8,18 @@
 #define USART_WIFI 		USART2
 #define USART_WIFI_BUF_SIZE 	128
 
-#define WIFI_MSG_FLAG_GENERAL_OK 	0x00000001
-#define WIFI_MSG_FLAG_GENERAL_ERR 	0x00000002
-#define WIFI_MSG_FLAG_GOT_CONNECT 	0x00000004
-#define WIFI_MSG_FLAG_GOT_CLOSED 	0x00000008
+#define WIFI_MSG_FLAG_GENERAL_OK 			0x00000001
+#define WIFI_MSG_FLAG_GENERAL_ERR 			0x00000002
+#define WIFI_MSG_FLAG_GOT_CONNECT 			0x00000004
+#define WIFI_MSG_FLAG_GOT_CLOSED 			0x00000008
 
-#define WIFI_MSG_FLAG_GOT_CLI 		0x00000010
-#define WIFI_MSG_FLAG_GOT_IPD 		0x00000020
+#define WIFI_MSG_FLAG_GOT_CLI 				0x00000010
+#define WIFI_MSG_FLAG_GOT_IPD 				0x00000020
 
-#define WIFI_MSG_FLAG_BUF_OVERFLOW 	0x40000000
-#define WIFI_MSG_FLAG_BUF_RESET 	0x80000000
+#define WIFI_MSG_FLAG_SERV_QUE_OVERFLOW 	0x20000000
+#define WIFI_MSG_FLAG_BUF_OVERFLOW 			0x40000000
+#define WIFI_MSG_FLAG_BUF_RESET 			0x80000000
+
 
 enum CIPSTATUS_PARSE_STATE {
 	CIPSTATUS_PARSE_NONE = 0,
@@ -49,6 +51,7 @@ extern BC_Mutex WifiRecvFlagMutex;
 volatile void IrqUsartWifi(void);
 sint32_t ParseIPD(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data);
 sint32_t ParseCIPSTATUS(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data);
+sint32_t TryDispatch(uint32_t sockfd, uint32_t msg_type, uint8_t * msg, uint32_t msg_size);
 
 #endif
 

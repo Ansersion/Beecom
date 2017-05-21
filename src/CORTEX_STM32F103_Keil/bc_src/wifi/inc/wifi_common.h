@@ -33,13 +33,24 @@
 *************************/
 #define SOCK_DATA_QUE_NUM 			1
 
+#define AF_INET 	0
+
+#define SOCK_STREAM 	0
+#define SOCK_DGRAM 		1
+
+#define LISTEN_QUEUE 	8
+
 #define ASSERT_SOCK_VALID(s) ((s) >= 0 && (s) < BC_MAX_SOCKET_NUM)
 
-#define WIFI_RESET_MAX_FAIL_COUNT 			3
-#define WIFI_SET_MODE_MAX_FAIL_COUNT 		3
-#define WIFI_SET_NET 						3
-#define WIFI_SET_MUX_MAX_FAIL_COUNT 		3
-#define WIFI_SET_SERV_MAX_FAIL_COUNT 		3
+#define WIFI_RESET_MAX_FAIL_COUNT 				3
+#define WIFI_SET_MODE_MAX_FAIL_COUNT 			3
+#define WIFI_SET_NET 							3
+#define WIFI_SET_MUX_MAX_FAIL_COUNT 			3
+#define WIFI_SET_SERV_MAX_FAIL_COUNT 			3
+#define WIFI_GET_STATUS_MAX_FAIL_COUNT 			3
+#define WIFI_SOCK_CLOSE_MAX_FAIL_COUNT 			3
+
+extern uint8_t INADDR_ANY[16];
 
 typedef struct in_addr {
 	uint8_t s_addr[16];
@@ -85,8 +96,8 @@ typedef enum WIFI_SERVER {
 	WIFI_SERVER_INVALID,
 }WIFI_SERVER;
 
-const WIFI_MODE 	GetWifiModeInfo(void);
-const WIFI_SERVER 	GetWifiServerInfo(void);
+WIFI_MODE 	GetWifiModeInfo(void);
+WIFI_SERVER 	GetWifiServerInfo(void);
 sint32_t BC_WifiReset(uint32_t * timeout);
 sint32_t BC_WifiSetMode(WIFI_MODE mode, uint32_t * timeout);
 sint32_t BC_WifiSetNet(uint8_t * ssid, uint8_t * pwd, uint32_t * timeout);
@@ -114,6 +125,8 @@ sint32_t SocketInit(void);
 //   Must run after "SocketInit"
 // *****************************/
 // sint32_t SockQueueInit(void);
+// extern BC_SocketData sock_serv;
+sint32_t CheckServAddr(uint8_t * addr);
 
 #endif
 

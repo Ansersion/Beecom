@@ -29,12 +29,17 @@
 #include <terminal.h>
 #include <mutex.h>
 
-static WIFI_MODE wifi_mode = WIFI_MODE_INVALID;
-static WIFI_MODE wifi_server = WIFI_SERVER_INVALID; 
+WIFI_MODE wifi_mode = WIFI_MODE_INVALID;
+WIFI_MODE wifi_server = WIFI_SERVER_INVALID; 
+
+uint8_t wifi_ssid_test[] = "\"hb402-2g\"";
+uint8_t wifi_pwd_test[] = "\"68704824\"";
+
 
 BC_SocketData sock_data[BC_MAX_SOCKET_NUM];
 // QueueHandle_t sock_queue[BC_MAX_SOCKET_NUM];
 BC_SocketData sock_serv;
+uint8_t INADDR_ANY[16];
 /**************************
   It's really a dull way to
   define the buffer.
@@ -47,19 +52,24 @@ uint8_t sock_buf_3[BC_MAX_SOCKET_BUF_SIZE];
 uint8_t sock_buf_4[BC_MAX_SOCKET_BUF_SIZE];
 
 static sint8_t pu8CmdMsg[128];
+static sint8_t pu8CmdMsgClose[64];
+static sint8_t pu8CmdMsgOpen[128];
+static sint8_t pu8CmdMsgConnect[128];
 
 static const sint8_t * WifiCmdReset = "AT+RST\r\n";
 static const sint8_t * WifiCmdSetMode = "AT+CWMODE=%d\r\n";
 static const sint8_t * WifiCmdSetNet = "AT+CWJAP=\"%s\",\"%s\"\r\n";
 static const sint8_t * WifiCmdSetMux = "AT+CIPMUX=%d\r\n";
 static const sint8_t * WifiCmdSetServ = "AT+CIPSERVER=%d,%d\r\n";
+static const sint8_t * WifiCmdStatus = "AT+CIPSTATUS\r\n";
+static const sint8_t * WifiCmdCloseSock = "AT+CIPCLOSE=%d\r\n";
 
-const WIFI_MODE GetWifiModeInfo(void)
+WIFI_MODE GetWifiModeInfo(void)
 {
 	return wifi_mode;
 }
 
-const WIFI_SERVER GetWifiServerInfo(void)
+WIFI_SERVER GetWifiServerInfo(void)
 {
 	return wifi_server;
 }
@@ -325,6 +335,54 @@ sint32_t BC_WifiSetServ(WIFI_SERVER server_mode, uint16_t port, uint32_t * timeo
 	return ret;
 }
 
+sint32_t BC_WifiGetStatus(uint32_t * timeout)
+{
+	sint32_t ret = BC_OK;
+	uint32_t fail_count = 0;
+
+	while(1) {
+		// check max failed count
+		if(++fail_count > WIFI_GET_STATUS_MAX_FAIL_COUNT) {
+			ret = -10;
+			break;
+		}
+		// send command
+		strcpy(pu8CmdMsg, WifiCmdStatus);
+		uputs(USART_WIFI, pu8CmdMsg);
+		// delay a little time(at least) 
+		vTaskDelay(10 / portTICK_RATE_MS); // at least delay 10ms
+		// delay 'timeout' microseconds if any
+		if(timeout) {
+			vTaskDelay(*timeout / portTICK_RATE_MS);
+		}
+		if(BCMutexLock(&WifiRecvFlagMutex) == BC_OK) {
+			// check if setting OK
+			if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK) {
+				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
+				BCMutexUnlock(&WifiRecvFlagMutex);
+				ret = BC_OK;
+				break;
+			// check if setting error
+			} else if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_ERR) {
+				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_ERR;
+				BCMutexUnlock(&WifiRecvFlagMutex);
+				ret = -4;
+				break;
+			}
+			BCMutexUnlock(&WifiRecvFlagMutex);
+		}
+		// after 'timeout' microseconds there is no
+		// result, so return error
+		if(timeout) {
+			ret = -1;
+			break;
+		}
+		
+	}
+
+	return ret;
+}
+
 sint32_t BC_Socket(sint32_t family, sint32_t type, sint32_t protocol)
 {
 	int i;
@@ -341,86 +399,78 @@ sint32_t BC_Socket(sint32_t family, sint32_t type, sint32_t protocol)
 
 sint32_t BC_Bind(sint32_t sockfd, const BC_Sockaddr * myaddr, uint32_t addrlen)
 {
-	if(!ASSERT_SOCK_VALID(sockfd)) {
-		return -1;
-	}
+	/// if(!ASSERT_SOCK_VALID(sockfd)) {
+	/// 	return -1;
+	/// }
 	if(!myaddr) {
 		return -2;
 	}
-	if(BC_TRUE != sock_data[sockfd].valid) {
-		return -3;
-	}
-	memcpy(&(sock_data[sockfd].addr), myaddr, addrlen);
-	return 0;
+	// if(BC_TRUE != sock_data[sockfd].valid) {
+	// 	return -3;
+	// }
+	// memcpy(&(sock_data[sockfd].addr), myaddr, addrlen);
+	return BC_OK;;
 }
 
 sint32_t BC_Listen(sint32_t sockfd, sint32_t backlog)
 {
-	uint32_t delay_ms = 50;
-	uint32_t fail_count = 0;
-	if(!ASSERT_SOCK_VALID(sockfd)) {
-		return -1;
-	}
+	// uint32_t delay_ms = 50;
+	// uint32_t fail_count = 0;
+	// if(!ASSERT_SOCK_VALID(sockfd)) {
+	// 	return -1;
+	// }
 	if(backlog < 0) {
 		return -2;
 	}
-	if(BC_TRUE != sock_data[sockfd].valid) {
-		return -3;
-	}
-	sock_data[sockfd].backlog = backlog;
+	/// if(BC_TRUE != sock_data[sockfd].valid) {
+	/// 	return -3;
+	/// }
+	/// sock_data[sockfd].backlog = backlog;
 
-	// while(!(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK)) {
-	// 	sprintf(pu8CmdMsg, "AT+CIPSERVER=1,%d\r\n", sock_data[sockfd].addr.sin_port);
-	// 	uputs(USART_WIFI, pu8CmdMsg);
-	// 	vTaskDelay(delay_ms);
-	// 	if(fail_count++ > BC_MAX_WIFI_FAIL_COUNT) {
-	// 		sprintf(pu8CmdMsg, "AT+CIPSERVER=1,%d: Error\r\n", sock_data[sockfd].addr.sin_port);
-	// 		// uputs(USART_TERMINAL, pu8CmdMsg);
-	// 		return -4;
-	// 	}
-	// }
-	// if(sockfd != 0) {
-	// 	// uputs(USART_TERMINAL, "Error: Only sockfd(LinkNo.)==0 can be server\r\n");
-	// 	return -5;
-	// }
-	// sock_data[sockfd].is_server = TRUE;
-	WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
-
-	return 0;
+	return BC_OK;
 }
 
 sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 {
 	BC_SocketData sock_data_tmp;
 
-	if(!ASSERT_SOCK_VALID(sockfd)) {
-		return -1;
-	}
+	// if(!ASSERT_SOCK_VALID(sockfd)) {
+	// 	return -1;
+	// }
 	if(!cliaddr) {
 		return -2;
 	}
 	if(!addrlen) {
 		return -3;
 	}
-	if(BC_TRUE != sock_data[sockfd].valid) {
-		return -4;
-	}
+	// if(BC_TRUE != sock_data[sockfd].valid) {
+	// 	return -4;
+	// }
 	// wait for the semphore
 
 	// k_cliaddr = cliaddr;
 	// k_addrlen = addrlen;
 
-	// while(pdFALSE == xQueueReceive(xQueue0, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
-	// }
-	uputs(USART_WIFI, "AT+CIPSTATUS\r\n");
+	while(pdFALSE == xQueueReceive(sock_serv.queue_handle, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
+		if(BC_OK != CheckServAddr(INADDR_ANY)) {
+			BC_WifiSetServ(WIFI_SERVER_OPEN, BC_CENTER_SERV_PORT, NULL);
+			BC_WifiSetNet(wifi_ssid_test, wifi_pwd_test, NULL);
+		} else {
+			printf("CheckServAddr OK\r\n");
+		}
+	}
+	// uputs(USART_WIFI, "AT+CIPSTATUS\r\n");
 	// while(pdFALSE == xQueueReceive(xQueue0, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
 	// 	// uputs(USART_TERMINAL, usart_wifi_buf);
 	// }
+	if(!ASSERT_SOCK_VALID(sock_data_tmp.wifi_id)) {
+		return -4;
+	}
+	sock_data[sock_data_tmp.wifi_id].valid = BC_TRUE;
 	memcpy(cliaddr, &(sock_data_tmp.addr), sizeof(BC_Sockaddr));
-	WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
-	WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
+	memcpy(&(sock_data[sock_data_tmp.wifi_id].addr), &(sock_data_tmp.addr), sizeof(BC_Sockaddr));
 
-	return 0;
+	return sock_data_tmp.wifi_id;
 }
 
 sint32_t BC_Connect(sint32_t sockfd, const BC_Sockaddr * servaddr, uint32_t addrlen)
@@ -441,16 +491,30 @@ sint32_t BC_Connect(sint32_t sockfd, const BC_Sockaddr * servaddr, uint32_t addr
 
 sint32_t BC_Close(sint32_t sockfd)
 {
+	sint32_t ret = BC_OK;
+	uint32_t fail_count = 0;
+
 	if(!ASSERT_SOCK_VALID(sockfd)) {
 		return -1;
 	}
 	if(!sock_data[sockfd].valid) {
 		return -2;
 	}
-	sprintf(pu8CmdMsg, "AT+CIPCLOSE=%d\r\n", sockfd);
-	uputs(USART_WIFI, pu8CmdMsg);
-	sock_data[sockfd].valid = BC_FALSE;
-	return 0;
+	while(1) {
+		// check max failed count
+		if(++fail_count > WIFI_SOCK_CLOSE_MAX_FAIL_COUNT) {
+			ret = -10;
+			break;
+		}
+		sprintf(pu8CmdMsgClose, WifiCmdCloseSock, sockfd);
+		uputs(USART_WIFI, pu8CmdMsgClose);
+		vTaskDelay(10 / portTICK_RATE_MS); // at least delay 10ms
+		// TODO: 
+	}
+	// sprintf(pu8CmdMsg, "AT+CIPCLOSE=%d\r\n", sockfd);
+	// uputs(USART_WIFI, pu8CmdMsg);
+	// sock_data[sockfd].valid = BC_FALSE;
+	return BC_OK;
 }
 
 sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
@@ -563,4 +627,21 @@ sint32_t SocketInit(void)
 // 
 // 	return result;
 // }
+
+sint32_t CheckServAddr(uint8_t * addr)
+{
+	if(!addr) {
+		return -1;
+	}
+	// assume min addr len: 1.1.1.1
+	// strlen("1.1.1.1") == 7
+	if(GetWifiServerInfo() != WIFI_SERVER_OPEN) {
+		return -3;
+	}
+	if(strlen(addr) < 7) {
+		return -2;
+	}
+	return BC_OK;
+}
+
 

@@ -131,11 +131,18 @@ TaskHandle_t DataHubHandle;
 
 int main( void )
 {
+	int i,j;
 	/* configure hareware */
 	prvSetupHardware();
 
 	/* beecom system initialization */
 	BC_Init();
+	for(i = 0; i < 15; i++) {
+		for(j = 0; j < 1000000; j++) {
+		}
+		printf("main: i=%d\r\n", i);
+	}
+	printf("OS Start\r\n");
 	
 	/* create beecom system tasks */
 	xTaskCreate(TaskWifiAgent, "TaskWifiAgent", BC_CONFIG_TASK_STACK_SIZE, NULL, BC_CONFIG_PRIORITY_COMMON_TASK, NULL);

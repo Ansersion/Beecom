@@ -86,24 +86,13 @@ volatile void IrqUsartWifi(void)
 	}
 
 	// client connects to local server
-	if(Index >= 1) {
+	if(Index > 0) {
 		if(isdigit(UsartWifiBuf[0])) {
 			u32CurrentSockId = BC_Atoi(UsartWifiBuf[0]);
-			if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CONN_END, WIFI_FLAG_CONN_END_SIZE, TRUE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_CONNECT) == 0) {
-				sock_serv.wifi_id = u32CurrentSockId;
-				if(pdTRUE == xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
-					// sprintf(msg_irs, "CONN QUE Err\r\n");
-				} else {
-					// sprintf(msg_irs, "CONN QUE OK\r\n");
-					// WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CONNECT;
-				}
+			if(BC_OK == TryDispatch(u32CurrentSockId, WIFI_MSG_FLAG_GOT_CONNECT, UsartWifiBuf, Index)) {
 				Index = 0;
 				return;
-			}
-			if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CLOSED_END, WIFI_FLAG_CLOSED_END_SIZE, TRUE)) {
-				// sock_data[u32CurrentSockId].msg_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
-				// WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLOSED;
-				sock_data[u32CurrentSockId].valid = BC_FALSE;
+			} else if(BC_OK == TryDispatch(u32CurrentSockId, WIFI_MSG_FLAG_GOT_CLOSED, UsartWifiBuf, Index)) {
 				Index = 0;
 				return;
 			}
@@ -111,13 +100,11 @@ volatile void IrqUsartWifi(void)
 	}
 
 	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_STATUS_ST, WIFI_FLAG_STATUS_ST_SIZE, FALSE)) {
-		if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_data_tmp) == 0) {
-			// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data_tmp, &xHigherPriorityTaskWoken)) {
-			// 	// sprintf(msg_irs, "STATUS QUE Err\r\n");
-			// } else {
-			// 	// sprintf(msg_irs, "STATUS QUE OK\r\n");
-			// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_CLI;
-			// }
+		if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_serv) == 0) {
+			sock_serv.wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLI;
+			if(pdTRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+				// sock_data[
+			}
 			return;
 		}
 	}
@@ -354,3 +341,52 @@ sint32_t ParseCIPSTATUS(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket
 	return result;
 }
 
+sint32_t TryDispatch(uint32_t sockfd, uint32_t msg_type, uint8_t * msg, uint32_t msg_size)
+{
+	if(!msg) {
+		return -1;
+	}
+	if(!ASSERT_SOCK_VALID(sockfd)) {
+		return -2;
+	}
+
+	switch(msg_type) {
+		case WIFI_MSG_FLAG_GOT_CONNECT:
+			if(!(sock_data[sockfd].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CONNECT)) {
+				return -3;
+			}
+			// TODO: Check net-internet client sockfd
+			if(BC_OK != CheckDataFlag(msg, msg_size, WIFI_FLAG_CONN_END, WIFI_FLAG_CONN_END_SIZE, TRUE)) {
+				return -4;
+			}
+			// TODO: Add mutex
+			sock_serv.wifi_id = sockfd;
+			sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CONNECT;
+			sock_data[sockfd].wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CLOSED;
+			if(BC_OK != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+				sock_data[sockfd].wifi_recv_flag &= WIFI_MSG_FLAG_SERV_QUE_OVERFLOW;
+			}
+			return BC_OK;
+		case WIFI_MSG_FLAG_GOT_CLOSED:
+			// TODO: Add mutex
+			if(!(sock_data[sockfd].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CLOSED)) {
+				return -3;
+			}
+			// TODO: Check net-internet client sockfd
+			if(BC_OK != CheckDataFlag(msg, msg_size, WIFI_FLAG_CLOSED_END, WIFI_FLAG_CLOSED_END_SIZE, TRUE)) {
+				return -4;
+			}
+			// TODO: Add mutex
+			sock_serv.wifi_id = sockfd;
+			sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
+			sock_data[sockfd].wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
+			if(BC_OK != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+				sock_data[sockfd].wifi_recv_flag &= WIFI_MSG_FLAG_SERV_QUE_OVERFLOW;
+			}
+			return BC_OK;
+		case WIFI_MSG_FLAG_GOT_IPD:
+			return BC_OK;
+		default:
+			return -1;
+	}
+}

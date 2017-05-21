@@ -39,6 +39,10 @@ __heap_limit
 				IMPORT vUARTInterruptHandler
 				; IMPORT vTimer2IntHandler
 				IMPORT xUSART2_IRQHandler
+				; IMPORT HardFault_Handler
+				; IMPORT MemManage_Handler
+				; IMPORT BusFault_Handler
+				; IMPORT UsageFault_Handler
 
                 PRESERVE8
                 THUMB

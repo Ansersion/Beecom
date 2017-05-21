@@ -27,7 +27,7 @@
 /*-------------------------------------------------------------------*/
 
 /*************************************************
- Task stack size for all tasks
+ Task stack size(in unit of word) for all tasks
 ***************************************************/
 #define BC_CONFIG_TASK_STACK_SIZE 	((unsigned short)256)
 
@@ -41,6 +41,11 @@
  Common timeout of 1 second 
 ***************************************************/
 #define TIMEOUT_COMMON 	1000/portTICK_RATE_MS
+
+/*************************************************
+ Beecom wifi tcp server port.
+***************************************************/
+#define BC_CENTER_SERV_PORT 	8025
 
 #endif
 

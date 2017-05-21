@@ -27,4 +27,6 @@
 #include <app_agent_common.h>
 #include <terminal.h>
 #include <mutex.h>
+#include <wifi_common.h>
+
 

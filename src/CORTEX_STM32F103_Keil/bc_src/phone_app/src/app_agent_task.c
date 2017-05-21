@@ -26,25 +26,105 @@
 #include <mutex.h>
 #include <panic.h>
 #include <bc_queue.h>
+#include <wifi_common.h>
 
 #include <app_agent_task.h>
 #include <app_agent_common.h>
 
 extern TaskHandle_t DataHubHandle;
+extern BC_SocketData sock_serv;
 
 #define LED_GREEN_TURN() (GPIOD->ODR ^= 1<<2) // green
 
 #define BC_MOD_MYSELF BC_MOD_PHONE_APP
 
+uint8_t AppPanicMsg[64];
 void TaskAppAgent(void *pvParameters)
 {
-	// block for 2000ms
-	const TickType_t delay_ms = 2000 / portTICK_PERIOD_MS;
+	static sint32_t ret = BC_OK;
+	BC_Sockaddr server_addr;
+	BC_Sockaddr client_addr;
+	uint32_t addr_len = sizeof(BC_Sockaddr);
+	sint32_t server_socket = 0;
+	sint32_t client_socket;
+
+	ret = TaskAppAgentInit();
+	if(ret != BC_OK) {
+		sprintf(AppPanicMsg, "AppAgent Init: ErrCode=%d", ret);
+		/* Never return */
+		BC_Panic(AppPanicMsg);
+	}
+	// sint32_t trans_len = 0;
+
+	memset(&server_addr, 0, sizeof(BC_Sockaddr));
+	server_addr.sin_family = AF_INET;
+	// diff: string not long
+	memcpy(server_addr.sin_addr.s_addr, INADDR_ANY, sizeof(INADDR_ANY));
+	// // diff: host order not net order
+	server_addr.sin_port = BC_CENTER_SERV_PORT;
+
+	// server_socket = BC_Socket(AF_INET, SOCK_STREAM, 0);
+	/* The socket of no use*/
+	server_socket = 1234; 
+
+	ret = BC_Bind(server_socket,&server_addr,sizeof(server_addr));
+	if(ret != BC_OK) {
+		sprintf(AppPanicMsg, "BC_Bind: ErrCode=%d", ret);
+		BC_Panic(AppPanicMsg);
+	}
+	ret = BC_Listen(server_socket, LISTEN_QUEUE);
+	if (ret != BC_OK) {
+		sprintf(AppPanicMsg, "BC_Listen: ErrCode=%d", ret);
+		BC_Panic(AppPanicMsg);
+	}
 
 	while(BC_TRUE) {
-		vTaskDelay(delay_ms);
-		// printf("TaskAppAgent\r\n");
+		memset(&client_addr, 0, sizeof(BC_Sockaddr));
+		// memset(SrvBuf, 0, TASK_BUF_SIZE);
+		// memset(DstBuf, 0, TASK_BUF_SIZE);
+		client_socket = BC_Accept(server_socket, &client_addr,&addr_len);
+		// WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_CLI;
+		if (client_socket < 0) {
+			printf("Server Accept Failed:%d\r\n", client_socket);
+			break;
+		} else {
+			printf("cli_sockfd:%d\r\n", client_socket);
+			printf("cli_addr:%s\r\n", client_addr.sin_addr.s_addr);
+			printf("cli_port:%d\r\n", client_addr.sin_port);
+		}
+		// trans_len = BC_Recv(client_socket, SrvBuf, TASK_BUF_SIZE, 0);
+		// WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_IPD;
+		// if(trans_len <= 0) {
+		// 	printf("Server Recv Failed\r\n");
+		// 	BC_Close(client_socket);
+		// 	continue;
+		// }
+		// printf("Recv from %s:%d\r\n", client_addr.sin_addr.s_addr, client_addr.sin_port);
+		// printf("Msg: #%s#\r\n", SrvBuf);
+		// printf("Echoing now...\r\n");
+		// sprintf(DstBuf, "Echo: %s", SrvBuf);
+		// trans_len = strlen(DstBuf);
+		// trans_len = BC_Send(client_socket, DstBuf, trans_len, 0);
+		// vTaskDelay(1000);
+		// WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
+		// if(trans_len < 0) {
+		// 	printf("Server Send Failed\r\n");
+		// 	BC_Close(client_socket);
+		// 	continue;
+		// }
+		BC_Close(client_socket);
 	}
+
+	// BC_Close(server_socket);
+	// vTaskDelay(500);
+	// WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_CLOSED;
+	// vTaskDelete(NULL);
+	// return;
+}
+
+sint32_t TaskAppAgentInit(void)
+{
+	return BC_OK;
 }
 // volatile void IrqUsartWifi( void )
 // {
