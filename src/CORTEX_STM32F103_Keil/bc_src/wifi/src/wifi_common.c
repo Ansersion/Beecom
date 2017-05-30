@@ -64,6 +64,8 @@ static const sint8_t * WifiCmdSetServ = "AT+CIPSERVER=%d,%d\r\n";
 static const sint8_t * WifiCmdStatus = "AT+CIPSTATUS\r\n";
 static const sint8_t * WifiCmdCloseSock = "AT+CIPCLOSE=%d\r\n";
 
+static const sint8_t * WifiCmdCifSr = "AT+CIFSR\r\n";
+
 WIFI_MODE GetWifiModeInfo(void)
 {
 	return wifi_mode;
@@ -335,6 +337,54 @@ sint32_t BC_WifiSetServ(WIFI_SERVER server_mode, uint16_t port, uint32_t * timeo
 	return ret;
 }
 
+sint32_t BC_WifiQuerySr(uint32_t * timeout)
+{
+	sint32_t ret = BC_OK;
+	uint32_t fail_count = 0;
+
+	while(1) {
+		// check max failed count
+		if(++fail_count > WIFI_CIF_SR_MAX_FAIL_COUNT) {
+			ret = -10;
+			break;
+		}
+		// send command
+		strcpy(pu8CmdMsg, WifiCmdCifSr);
+		uputs(USART_WIFI, pu8CmdMsg);
+		// delay a little time(at least) 
+		vTaskDelay(10 / portTICK_RATE_MS); // at least delay 10ms
+		// delay 'timeout' microseconds if any
+		if(timeout) {
+			vTaskDelay(*timeout / portTICK_RATE_MS);
+		}
+		if(BCMutexLock(&WifiRecvFlagMutex) == BC_OK) {
+			// check if setting OK
+			if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK) {
+				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
+				BCMutexUnlock(&WifiRecvFlagMutex);
+				ret = BC_OK;
+				break;
+			// check if setting error
+			} else if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_ERR) {
+				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_ERR;
+				BCMutexUnlock(&WifiRecvFlagMutex);
+				ret = -4;
+				break;
+			}
+			BCMutexUnlock(&WifiRecvFlagMutex);
+		}
+		// after 'timeout' microseconds there is no
+		// result, so return error
+		if(timeout) {
+			ret = -1;
+			break;
+		}
+		
+	}
+
+	return ret;
+}
+
 sint32_t BC_WifiGetStatus(uint32_t * timeout)
 {
 	sint32_t ret = BC_OK;
@@ -451,10 +501,11 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 	// k_cliaddr = cliaddr;
 	// k_addrlen = addrlen;
 
-	while(pdFALSE == xQueueReceive(sock_serv.queue_handle, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
+	while(pdFALSE == xQueueReceive(sock_serv.queue_handle, &sock_data_tmp, 5000/portTICK_RATE_MS)) {
+		printf("addr: %s\r\n", INADDR_ANY);
 		if(BC_OK != CheckServAddr(INADDR_ANY)) {
-			BC_WifiSetServ(WIFI_SERVER_OPEN, BC_CENTER_SERV_PORT, NULL);
-			BC_WifiSetNet(wifi_ssid_test, wifi_pwd_test, NULL);
+			// BC_WifiSetServ(WIFI_SERVER_OPEN, BC_CENTER_SERV_PORT, NULL);
+			// BC_WifiSetNet(wifi_ssid_test, wifi_pwd_test, NULL);
 		} else {
 			printf("CheckServAddr OK\r\n");
 		}

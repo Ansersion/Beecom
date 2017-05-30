@@ -115,6 +115,14 @@ void TaskTerminal(void * pvParameters)
 				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_MUX;
 				testWifiMsgUnit.ClbkPara.SetMuxPara.Mux = WIFI_MUX_OPEN;
 				break;
+			case 'I':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_QRY_SR;
+				break;
+			case 'S':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_SERV;
+				testWifiMsgUnit.ClbkPara.ServPara.ServMode = WIFI_SERVER_OPEN;
+				testWifiMsgUnit.ClbkPara.ServPara.Port = BC_CENTER_SERV_PORT;
+				break;
 			default:
 				continue;
 				break;

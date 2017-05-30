@@ -48,13 +48,15 @@ uint8_t WIFI_FLAG_STATUS_ST[] = "AT+CIPSTATUS";
 uint32_t WIFI_FLAG_STATUS_ST_SIZE = sizeof(WIFI_FLAG_STATUS_ST) - 1;
 uint8_t WIFI_FLAG_IPD_ST[] = "+IPD";
 uint32_t WIFI_FLAG_IPD_ST_SIZE = sizeof(WIFI_FLAG_IPD_ST) - 1;
+uint8_t WIFI_FLAG_SR_ST[] = "AT+CIFSR";
+uint32_t WIFI_FLAG_SR_ST_SIZE = sizeof(WIFI_FLAG_SR_ST) - 1;
 
 volatile void IrqUsartWifi(void)
 {
 	static uint32_t Index = 0;
 	static uint16_t RxData=0;
 	static sint32_t u32CurrentSockId = -1;
-	BC_SocketData sock_data_tmp;
+	// BC_SocketData sock_data_tmp;
 
 	if(USART_GetITStatus(USART_WIFI, USART_IT_RXNE) == RESET) {
 		return;
@@ -102,6 +104,14 @@ volatile void IrqUsartWifi(void)
 	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_STATUS_ST, WIFI_FLAG_STATUS_ST_SIZE, FALSE)) {
 		if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_serv) == 0) {
 			sock_serv.wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLI;
+			if(pdTRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+				// sock_data[
+			}
+			return;
+		}
+	}
+	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_SR_ST, WIFI_FLAG_SR_ST_SIZE, FALSE)) {
+		if(ParseCIFSR(UsartWifiBuf+WIFI_FLAG_SR_ST_SIZE, Index-WIFI_FLAG_SR_ST_SIZE, INADDR_ANY, 16) == 0) {
 			if(pdTRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
 				// sock_data[
 			}
@@ -299,8 +309,10 @@ sint32_t ParseCIPSTATUS(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket
 			for(i = old_i; i < old_i+16;i++) {
 				if('.' == buf[i] || isdigit(buf[i])) {
 					(socket_data->addr).sin_addr.s_addr[i-old_i] = buf[i]; 
+					// INADDR_ANY[i-old_i] = buf[i];
 				} else {
 					(socket_data->addr).sin_addr.s_addr[i-old_i] = '\0';
+					// INADDR_ANY[i-old_i] = '\0';
 					break;
 				}
 			}
@@ -333,6 +345,118 @@ sint32_t ParseCIPSTATUS(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket
 			break;
 		default:
 			StatusState = CIPSTATUS_PARSE_CHAR_PLUS;
+			old_i = 0;
+			result = 2;
+			break;
+	}
+
+	return result;
+}
+
+sint32_t ParseCIFSR(uint8_t * buf, uint32_t buf_size, uint8_t * addr_buf, uint32_t addr_buf_size)
+{
+	static sint32_t SrState = CIFSR_PARSE_FIRST_COMMA;
+	static sint32_t i = 0, old_i = 0;
+	static sint32_t result = 0; // 0->Parse Completed, 1->Parsing..., 2->Error
+
+	if(!buf) {
+		// sprintf(msg_irs,"ret=-1\r\n");
+		return -1;
+	}
+	if(!addr_buf) {
+		// sprintf(msg_irs,"ret=-2\r\n");
+		return -2;
+	}
+
+	result = 1;
+	// e.g:
+	// +CIFSR:STAIP,"192.168.2.103"
+	// +CIFSR:STAMAC,"60:01:94:08:3e:fc"
+	switch(SrState) {
+		case CIFSR_PARSE_FIRST_COMMA:
+			for(i = old_i; i < buf_size; i++) {
+				if(',' == buf[i]) {
+					SrState = CIFSR_PARSE_IP_QUOTE_1;
+					old_i = i+1;
+					break;
+				}
+			}
+			break;
+		case CIFSR_PARSE_IP_QUOTE_1:
+			for(i = old_i; i < buf_size; i++) {
+				if('"' == buf[i]) {
+					SrState = CIFSR_PARSE_IP_QUOTE_2;
+					old_i = i+1;
+					break;
+				}
+			}
+			break;
+		case CIFSR_PARSE_IP_QUOTE_2:
+			for(i = old_i; i < buf_size; i++) {
+				if('"' == buf[i]) {
+					SrState = CIFSR_PARSE_IP;
+					// PS: old_i is now at the first number of IP
+					// old_i = i+1;
+					break;
+				}
+			}
+			break;
+		case CIFSR_PARSE_IP:
+			for(i = old_i; i < old_i+addr_buf_size;i++) {
+				if('.' == buf[i] || isdigit(buf[i])) {
+					addr_buf[i-old_i] = buf[i];
+				} else {
+					addr_buf[i-old_i] = '\0';
+					break;
+				}
+			}
+			for(i = old_i; i < buf_size; i++) {
+				if('"' == buf[i]) {
+					SrState = CIFSR_PARSE_SECOND_COMMA;
+					old_i = i+1;
+					break;
+				}
+			}
+			break;
+		case CIFSR_PARSE_SECOND_COMMA:
+			for(i = old_i; i < buf_size; i++) {
+				if(',' == buf[i]) {
+					SrState = CIFSR_PARSE_MAC_QUOTE_1;
+					old_i = i+1;
+					break;
+				}
+			}
+			break;
+		case CIFSR_PARSE_MAC_QUOTE_1:
+			for(i = old_i; i < buf_size; i++) {
+				if('"' == buf[i]) {
+					SrState = CIFSR_PARSE_MAC_QUOTE_2;
+					old_i = i+1;
+					break;
+				}
+			}
+			break;
+		case CIFSR_PARSE_MAC_QUOTE_2:
+			for(i = old_i; i < buf_size; i++) {
+				if('"' == buf[i]) {
+					SrState = CIFSR_PARSE_MAC;
+					// old_i = i+1;
+					break;
+				}
+			}
+			break;
+		case CIFSR_PARSE_MAC:
+			for(i = old_i; i < buf_size; i++) {
+				if('"' == buf[i]) {
+					SrState = CIFSR_PARSE_FIRST_COMMA;
+					result = 0;
+					old_i = 0;
+					break;
+				}
+			}
+			break;
+		default:
+			SrState = CIFSR_PARSE_FIRST_COMMA;
 			old_i = 0;
 			result = 2;
 			break;

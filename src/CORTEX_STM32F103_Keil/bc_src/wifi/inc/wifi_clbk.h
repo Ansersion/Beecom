@@ -26,6 +26,7 @@ typedef enum WIFI_CLBK_CMD_ID {
 	WIFI_CLBK_CMD_SET_NET,
 	WIFI_CLBK_CMD_SET_MUX,
 	WIFI_CLBK_CMD_SET_SERV,
+	WIFI_CLBK_CMD_QRY_SR,
 }WIFI_CLBK_CMD_ID;
 
 typedef struct stWifiClbkResetPara {
@@ -56,12 +57,18 @@ typedef struct stWifiClbkServPara{
 	// uint32_t * Timeout;
 }stWifiClbkServPara;
 
+typedef struct stWifiClbkSrPara{
+	// no use
+	uint32_t NO_USE;
+}stWifiClbkSrPara;
+
 typedef union unWifiClbkPara {
 	stWifiClbkResetPara 	ResetPara;
 	stWifiClbkSetModePara 	SetModePara;
 	stWifiClbkSetNetPara 	SetNetPara;
 	stWifiClbkSetMuxPara 	SetMuxPara;
 	stWifiClbkServPara 		ServPara;
+	stWifiClbkSrPara 		SrPara;
 }unWifiClbkPara;
 
 typedef struct stWifiMsgUnit {

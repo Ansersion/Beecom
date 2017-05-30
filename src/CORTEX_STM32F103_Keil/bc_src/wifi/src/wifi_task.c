@@ -66,7 +66,7 @@ void TaskWifiAgent(void *pvParameters)
 		// // BC_MsgSetMsg(&qe, UsartTermBuf, strlen(UsartTermBuf));
 		// BC_MsgSetMsg(&qe, msg, strlen((const char *)msg));
 		ret = ProcWifiMsg(&qe, wifi_msg);
-		printf("wifi task: ret=%d\r\n%s\r\n", ret, wifi_msg);
+		printf("wifi task: ret=%d\r\n", ret);
 		if(BC_MOD_IRQ != qe.u8SrcID) {
 			continue;
 		}
@@ -116,6 +116,7 @@ sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg)
 			return -11;
 		}
 		msg_unit = (stWifiMsgUnit *)(qe->pText);
+		printf("wifi cmd: %d\r\n%s\r\n", msg_unit->WifiClbkCmd, wifi_msg);
 		switch(msg_unit->WifiClbkCmd) {
 			case WIFI_CLBK_CMD_RESET:
 				ret = BC_WifiReset(NULL);
@@ -131,6 +132,9 @@ sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg)
 				break;
 			case WIFI_CLBK_CMD_SET_SERV:
 				ret = BC_WifiSetServ(msg_unit->ClbkPara.ServPara.ServMode, msg_unit->ClbkPara.ServPara.Port, NULL);
+				break;
+			case WIFI_CLBK_CMD_QRY_SR:
+				ret = BC_WifiQuerySr(NULL);
 				break;
 			default:
 				break;
