@@ -483,6 +483,8 @@ sint32_t BC_Listen(sint32_t sockfd, sint32_t backlog)
 sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 {
 	BC_SocketData sock_data_tmp;
+	uint32_t fail_count = 0;
+	uint32_t wifi_id = 0;
 
 	// if(!ASSERT_SOCK_VALID(sockfd)) {
 	// 	return -1;
@@ -501,27 +503,52 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 	// k_cliaddr = cliaddr;
 	// k_addrlen = addrlen;
 
-	while(pdFALSE == xQueueReceive(sock_serv.queue_handle, &sock_data_tmp, 5000/portTICK_RATE_MS)) {
-		printf("addr: %s\r\n", INADDR_ANY);
+	while(1) {
+		if(pdFALSE == xQueueReceive(sock_serv.queue_handle, &sock_data_tmp, 5000/portTICK_RATE_MS)) {
+			printf("addr: %s\r\n", INADDR_ANY);
+			continue;
+		}
+		printf("wifi_id: %d\t%x\r\n", sock_data_tmp.wifi_id, sock_data[sock_data_tmp.wifi_id].wifi_recv_flag);
+		printf("backlog-s: %d\r\n", sock_serv.backlog);
+		printf("backlog-t: %d\r\n", sock_data_tmp.backlog);
+		printf("recv-t: %d\r\n", sock_data_tmp.wifi_recv_flag);
+		if(!(sock_data[sock_data_tmp.wifi_id].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CONNECT)) {
+			printf("!WIFI_MSG_FLAG_GOT_CONNECT\r\n");
+			continue;
+		}
 		if(BC_OK != CheckServAddr(INADDR_ANY)) {
 			// BC_WifiSetServ(WIFI_SERVER_OPEN, BC_CENTER_SERV_PORT, NULL);
 			// BC_WifiSetNet(wifi_ssid_test, wifi_pwd_test, NULL);
 		} else {
 			printf("CheckServAddr OK\r\n");
+			break;
 		}
 	}
-	// uputs(USART_WIFI, "AT+CIPSTATUS\r\n");
-	// while(pdFALSE == xQueueReceive(xQueue0, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
-	// 	// uputs(USART_TERMINAL, usart_wifi_buf);
-	// }
+	printf("wifi_id:%d\r\n", sock_data_tmp.wifi_id);
 	if(!ASSERT_SOCK_VALID(sock_data_tmp.wifi_id)) {
 		return -4;
 	}
-	sock_data[sock_data_tmp.wifi_id].valid = BC_TRUE;
+	wifi_id = sock_data_tmp.wifi_id;
+	while(1) {
+		if(fail_count > 3) {
+			printf("Fail count > 3\r\n");
+			break;
+		}
+		fail_count++;
+		uputs(USART_WIFI, "AT+CIPSTATUS\r\n");
+		if(BC_TRUE == xQueueReceive(sock_data[wifi_id].queue_handle, &sock_data_tmp, 2000/portTICK_RATE_MS)) {
+			printf("got wifi_id msg\r\n");
+			break;
+		}
+		else {
+			printf("try %d\n", fail_count);
+		}
+	}
+	sock_data[wifi_id].valid = BC_TRUE;
 	memcpy(cliaddr, &(sock_data_tmp.addr), sizeof(BC_Sockaddr));
-	memcpy(&(sock_data[sock_data_tmp.wifi_id].addr), &(sock_data_tmp.addr), sizeof(BC_Sockaddr));
+	memcpy(&(sock_data[wifi_id].addr), &(sock_data_tmp.addr), sizeof(BC_Sockaddr));
 
-	return sock_data_tmp.wifi_id;
+	return wifi_id;
 }
 
 sint32_t BC_Connect(sint32_t sockfd, const BC_Sockaddr * servaddr, uint32_t addrlen)

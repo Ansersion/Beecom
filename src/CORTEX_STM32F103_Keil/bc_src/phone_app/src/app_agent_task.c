@@ -112,6 +112,7 @@ void TaskAppAgent(void *pvParameters)
 		// 	BC_Close(client_socket);
 		// 	continue;
 		// }
+		vTaskDelay(1000/portTICK_RATE_MS);
 		BC_Close(client_socket);
 	}
 

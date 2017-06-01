@@ -102,9 +102,9 @@ volatile void IrqUsartWifi(void)
 	}
 
 	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_STATUS_ST, WIFI_FLAG_STATUS_ST_SIZE, FALSE)) {
-		if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_serv) == 0) {
-			sock_serv.wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLI;
-			if(pdTRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+		if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_data[sock_serv.wifi_id]) == 0) {
+			sock_serv.wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
+			if(pdTRUE != xQueueSendFromISR(sock_data[sock_serv.wifi_id].queue_handle, &sock_data[sock_serv.wifi_id], NULL)) {
 				// sock_data[
 			}
 			return;
@@ -468,44 +468,54 @@ sint32_t ParseCIFSR(uint8_t * buf, uint32_t buf_size, uint8_t * addr_buf, uint32
 sint32_t TryDispatch(uint32_t sockfd, uint32_t msg_type, uint8_t * msg, uint32_t msg_size)
 {
 	if(!msg) {
+		sock_serv.backlog = -1;
 		return -1;
 	}
 	if(!ASSERT_SOCK_VALID(sockfd)) {
+		sock_serv.backlog = -2;
 		return -2;
 	}
 
 	switch(msg_type) {
 		case WIFI_MSG_FLAG_GOT_CONNECT:
-			if(!(sock_data[sockfd].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CONNECT)) {
+			sock_serv.backlog = -9;
+			if(sock_data[sockfd].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CONNECT) {
+				sock_serv.backlog = -3;
 				return -3;
 			}
 			// TODO: Check net-internet client sockfd
 			if(BC_OK != CheckDataFlag(msg, msg_size, WIFI_FLAG_CONN_END, WIFI_FLAG_CONN_END_SIZE, TRUE)) {
+				sock_serv.backlog = -4;
 				return -4;
 			}
 			// TODO: Add mutex
 			sock_serv.wifi_id = sockfd;
+			// sock_serv.wifi_recv_flag |= 0x1000000000;
 			sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CONNECT;
 			sock_data[sockfd].wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CLOSED;
-			if(BC_OK != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
-				sock_data[sockfd].wifi_recv_flag &= WIFI_MSG_FLAG_SERV_QUE_OVERFLOW;
-			}
+			if(BC_TRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+				sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_SERV_QUE_OVERFLOW;
+			} 
 			return BC_OK;
 		case WIFI_MSG_FLAG_GOT_CLOSED:
 			// TODO: Add mutex
-			if(!(sock_data[sockfd].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CLOSED)) {
-				return -3;
-			}
+				sock_serv.backlog = -6;
+			// if(!(sock_data[sockfd].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CLOSED)) {
+			// 	sock_serv.backlog = -5;
+			// 	return -3;
+			// }
 			// TODO: Check net-internet client sockfd
 			if(BC_OK != CheckDataFlag(msg, msg_size, WIFI_FLAG_CLOSED_END, WIFI_FLAG_CLOSED_END_SIZE, TRUE)) {
+				sock_serv.backlog = -7;
 				return -4;
 			}
 			// TODO: Add mutex
+			sock_serv.backlog = -8;
 			sock_serv.wifi_id = sockfd;
-			sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
+			// sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
 			sock_data[sockfd].wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
-			if(BC_OK != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
-				sock_data[sockfd].wifi_recv_flag &= WIFI_MSG_FLAG_SERV_QUE_OVERFLOW;
+			if(BC_TRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+				sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_SERV_QUE_OVERFLOW;
 			}
 			return BC_OK;
 		case WIFI_MSG_FLAG_GOT_IPD:
