@@ -50,6 +50,7 @@
 #define WIFI_GET_STATUS_MAX_FAIL_COUNT 			3
 #define WIFI_SOCK_CLOSE_MAX_FAIL_COUNT 			3
 #define WIFI_CIF_SR_MAX_FAIL_COUNT 				3
+#define WIFI_CIF_ST_MAX_FAIL_COUNT 				3
 
 extern uint8_t INADDR_ANY[16];
 
@@ -105,6 +106,7 @@ sint32_t BC_WifiSetNet(uint8_t * ssid, uint8_t * pwd, uint32_t * timeout);
 sint32_t BC_WifiSetMux(WIFI_MUX mux_mode, uint32_t * timeout);
 sint32_t BC_WifiSetServ(WIFI_SERVER server_mode, uint16_t port, uint32_t * timeout);
 sint32_t BC_WifiQuerySr(uint32_t * timeout);
+sint32_t BC_WifiQuerySt(uint32_t * timeout);
 
 // wifi APIs
 // They are similar to linux socket

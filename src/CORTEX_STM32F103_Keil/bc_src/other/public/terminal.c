@@ -46,11 +46,17 @@ static uint32_t FlagSize = sizeof(EndFlag) - 1;
 // static BC_QueueElement QueEleForIrq;
 static uint32_t GotMsgFlag = BC_FALSE;
 static QueueHandle_t UsartMsgQueue;
+static uint8_t WifiSsidBuf[64];
+static uint8_t WifiPwdBuf[64];
 
 sint32_t TaskTerminalInit(void)
 {
 	UsartMsgQueue = NULL;
 	memset(UsartTermBuf, 0, sizeof(UsartTermBuf));
+	memset(WifiSsidBuf, 0, sizeof(WifiSsidBuf));
+	strcpy(WifiSsidBuf, "404-hb2g");
+	memset(WifiPwdBuf, 0, sizeof(WifiPwdBuf));
+	strcpy(WifiPwdBuf, "68704824");
 	GotMsgFlag = BC_FALSE;
 	UsartMsgQueue = xQueueCreate(1, sizeof(uint32_t));
 	if(!UsartMsgQueue) {
@@ -60,7 +66,6 @@ sint32_t TaskTerminalInit(void)
 }
 
 volatile void IrqUsartTerminal(void)
-// volatile void vUARTInterruptHandler(void)
 {
 	static uint32_t Index = 0;
 	static uint16_t RxData=0;
@@ -77,7 +82,6 @@ volatile void IrqUsartTerminal(void)
 		Index = 0;
 		return;
 	}
-	// if(BC_OK == CheckEndFlag(UsartTermBuf, Index, EndFlag, FlagSize)) {
 	if(BC_OK == CheckDataFlag(UsartTermBuf, Index, EndFlag, FlagSize, BC_TRUE)) {
 		xQueueSendFromISR(UsartMsgQueue, &GotMsgFlag, &xHigherPriorityTaskWoken);
 		UsartTermBuf[Index] = '\0';
@@ -122,6 +126,11 @@ void TaskTerminal(void * pvParameters)
 				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_SERV;
 				testWifiMsgUnit.ClbkPara.ServPara.ServMode = WIFI_SERVER_OPEN;
 				testWifiMsgUnit.ClbkPara.ServPara.Port = BC_CENTER_SERV_PORT;
+				break;
+			case 'N':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_NET;
+				testWifiMsgUnit.ClbkPara.SetNetPara.Ssid = WifiSsidBuf;
+				testWifiMsgUnit.ClbkPara.SetNetPara.Pwd = WifiPwdBuf;
 				break;
 			default:
 				continue;

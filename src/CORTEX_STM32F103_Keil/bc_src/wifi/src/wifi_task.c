@@ -136,6 +136,10 @@ sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg)
 			case WIFI_CLBK_CMD_QRY_SR:
 				ret = BC_WifiQuerySr(NULL);
 				break;
+			case WIFI_CLBK_CMD_QRY_ST:
+				printf("BC_WifiQuerySt\r\n");
+				ret = BC_WifiQuerySt(NULL);
+				break;
 			default:
 				break;
 		}

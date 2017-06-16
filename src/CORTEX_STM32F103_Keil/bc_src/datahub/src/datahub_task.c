@@ -32,7 +32,7 @@
 // 
 // The order is according to 'enum BC_ModID'
 BC_MsgDirMap ModMsgMap[] = {
-	// {BC_MOD_DEFAULT, 	0, 					0, 		0, 		NULL},
+	{BC_MOD_DEFAULT, 	NULL, 				NULL, 					NULL, 					NULL},
 	// {BC_MOD_DATAHUB, 	0, 					0, 		0, 		NULL},
 	{BC_MOD_PHONE_APP, 	BC_MOD_ZIGBEE, 		BC_MOD_INVALID, 		BC_MOD_INVALID, 		NULL},
 	{BC_MOD_ZIGBEE, 	BC_MOD_PHONE_APP, 	BC_MOD_INVALID, 		BC_MOD_INVALID, 		NULL},
@@ -61,10 +61,11 @@ void TaskDataHub(void *pvParameters)
 	while(BC_TRUE) {
 		// printf("DataHub\r\n");
 		memset(&queue_element, 0, sizeof(queue_element));
+		printf("datahub: start\r\n");
 		for(i = 0; i < ModMsgMapSize; i++) {
 			src_id = ModMsgMap[i].u8SrcID;
 			if(!BC_ASSERT_MOD_ID_VALID(src_id)) {
-				// printf("DEBUG: DataHub\r\n");
+				printf("DEBUG: DataHub\r\n");
 				continue;
 			}
 			if(BC_Dequeue(BC_ModInQueue[src_id], &queue_element, 0) == BC_TRUE) {
@@ -95,6 +96,10 @@ static sint32_t BC_Transmit2Mod(BC_QueueElement * que_elm, BC_MsgDirMap * msg_di
 	if(!BC_ASSERT_MOD_ID_VALID(que_elm->u8DstID)) {
 		return -2;
 	}
+	// if(que_elm->u8DstID == que_elm->u8SrcID) {
+	// 	printf("To self: %d\r\n", que_elm->u8DstID);
+	// 	return 0;
+	// }
 	if(que_elm->u8DstID != BC_MOD_DEFAULT) {
 		// if the queue is full
 		// the data will be dropped
