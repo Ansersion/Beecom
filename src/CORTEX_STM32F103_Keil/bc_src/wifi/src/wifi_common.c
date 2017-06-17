@@ -398,12 +398,61 @@ sint32_t BC_WifiQuerySt(uint32_t * timeout)
 
 	while(1) {
 		// check max failed count
-		if(++fail_count > WIFI_CIF_SR_MAX_FAIL_COUNT) {
+		if(++fail_count > WIFI_CIF_ST_MAX_FAIL_COUNT) {
 			ret = -10;
 			break;
 		}
 		// send command
 		strcpy(pu8CmdMsg, WifiCmdCifSt);
+		uputs(USART_WIFI, pu8CmdMsg);
+		// delay a little time(at least) 
+		vTaskDelay(10 / portTICK_RATE_MS); // at least delay 10ms
+		// delay 'timeout' microseconds if any
+		if(timeout) {
+			vTaskDelay(*timeout / portTICK_RATE_MS);
+		}
+		if(BCMutexLock(&WifiRecvFlagMutex) == BC_OK) {
+			// check if setting OK
+			if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK) {
+				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
+				BCMutexUnlock(&WifiRecvFlagMutex);
+				ret = BC_OK;
+				break;
+			// check if setting error
+			} else if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_ERR) {
+				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_ERR;
+				BCMutexUnlock(&WifiRecvFlagMutex);
+				ret = -4;
+				break;
+			}
+			BCMutexUnlock(&WifiRecvFlagMutex);
+		}
+		// after 'timeout' microseconds there is no
+		// result, so return error
+		if(timeout) {
+			ret = -1;
+			break;
+		}
+		
+	}
+
+	return ret;
+}
+
+sint32_t BC_WifiCloseSock(uint32_t sockfd, uint32_t * timeout)
+{
+	sint32_t ret = BC_OK;
+	uint32_t fail_count = 0;
+	printf("Close sock\r\n");
+
+	while(1) {
+		// check max failed count
+		if(++fail_count > WIFI_CIP_CLS_MAX_FAIL_COUNT) {
+			ret = -10;
+			break;
+		}
+		// send command
+		sprintf(pu8CmdMsg, WifiCmdCloseSock, sockfd);
 		uputs(USART_WIFI, pu8CmdMsg);
 		// delay a little time(at least) 
 		vTaskDelay(10 / portTICK_RATE_MS); // at least delay 10ms
@@ -582,7 +631,7 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 			if(pdFALSE == xQueueReceive(sock_data[sock_data_tmp.wifi_id].queue_handle, &sock_data_tmp, 5000/portTICK_RATE_MS)) {
 				fail_count++;
 				if(fail_count > 3) {
-					fail_count = sock_data_tmp.wifi_id = BC_MAX_SOCKET_NUM+1;
+					sock_data_tmp.wifi_id = BC_MAX_SOCKET_NUM+1;
 					break;
 				}
 				printf("try again(addr2: %s)\r\n", INADDR_ANY);
@@ -635,6 +684,9 @@ sint32_t BC_Close(sint32_t sockfd)
 {
 	sint32_t ret = BC_OK;
 	uint32_t fail_count = 0;
+	BC_QueueElement qe;
+	stWifiMsgUnit WifiMsgUnit;
+	BC_SocketData sock_data_tmp;
 
 	if(!ASSERT_SOCK_VALID(sockfd)) {
 		return -1;
@@ -642,16 +694,38 @@ sint32_t BC_Close(sint32_t sockfd)
 	if(!sock_data[sockfd].valid) {
 		return -2;
 	}
+	// while(1) {
+	// 	// check max failed count
+	// 	if(++fail_count > WIFI_SOCK_CLOSE_MAX_FAIL_COUNT) {
+	// 		ret = -10;
+	// 		break;
+	// 	}
+
+	// 	sprintf(pu8CmdMsgClose, WifiCmdCloseSock, sockfd);
+	// 	uputs(USART_WIFI, pu8CmdMsgClose);
+	// 	vTaskDelay(10 / portTICK_RATE_MS); // at least delay 10ms
+	// 	// TODO: 
+	// }
+	BC_MsgInit(&qe, BC_MOD_DEFAULT, BC_MOD_WIFI);
+	WifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_CLOSE_SOCK;
+	WifiMsgUnit.ClbkPara.ClsSockPara.sockfd = sockfd;
+	BC_MsgSetMsg(&qe, (uint8_t *)&WifiMsgUnit, sizeof(WifiMsgUnit));
 	while(1) {
-		// check max failed count
-		if(++fail_count > WIFI_SOCK_CLOSE_MAX_FAIL_COUNT) {
-			ret = -10;
+		while(BC_Enqueue(BC_ModInQueue[BC_MOD_DEFAULT], &qe, TIMEOUT_COMMON) == BC_FALSE) {
+		}
+		vTaskResume(DataHubHandle);
+
+		if(pdFALSE == xQueueReceive(sock_data[sockfd].queue_handle, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
+			fail_count++;
+			if(fail_count > 3) {
+				// sock_data_tmp.wifi_id = BC_MAX_SOCKET_NUM+1;
+				// break;
+				sock_data[sockfd].valid = BC_FALSE;
+				return BC_ERR;
+			}
+		} else {
 			break;
 		}
-		sprintf(pu8CmdMsgClose, WifiCmdCloseSock, sockfd);
-		uputs(USART_WIFI, pu8CmdMsgClose);
-		vTaskDelay(10 / portTICK_RATE_MS); // at least delay 10ms
-		// TODO: 
 	}
 	// sprintf(pu8CmdMsg, "AT+CIPCLOSE=%d\r\n", sockfd);
 	// uputs(USART_WIFI, pu8CmdMsg);

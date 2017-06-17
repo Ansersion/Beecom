@@ -51,6 +51,7 @@
 #define WIFI_SOCK_CLOSE_MAX_FAIL_COUNT 			3
 #define WIFI_CIF_SR_MAX_FAIL_COUNT 				3
 #define WIFI_CIF_ST_MAX_FAIL_COUNT 				3
+#define WIFI_CIP_CLS_MAX_FAIL_COUNT 			3
 
 extern uint8_t INADDR_ANY[16];
 
