@@ -56,6 +56,14 @@ enum CIFSR_PARSE_STATE {
 	CIFSR_PARSE_MAC,
 };
 
+enum CIPCLOSE_PARSE_STATE {
+	CIPCLOSE_PARSE_NONE = 0,
+	CIPCLOSE_PARSE_CHAR_EQUAL,
+	CIPCLOSE_PARSE_SOCKET_ID,
+	CIPCLOSE_PARSE_CHAR_D,
+	CIPCLOSE_PARSE_RESULT,
+};
+
 extern uint8_t UsartWifiBuf[];
 extern uint32_t WifiRecvFlag;
 extern BC_Mutex WifiRecvFlagMutex;
@@ -64,6 +72,7 @@ volatile void IrqUsartWifi(void);
 sint32_t ParseIPD(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data);
 sint32_t ParseCIPSTATUS(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data);
 sint32_t ParseCIFSR(uint8_t * buf, uint32_t buf_size, uint8_t * addr_buf, uint32_t addr_buf_size);
+sint32_t ParseCIPCLOSE(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data);
 sint32_t TryDispatch(uint32_t sockfd, uint32_t msg_type, uint8_t * msg, uint32_t msg_size);
 
 #endif

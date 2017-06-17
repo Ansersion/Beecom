@@ -569,7 +569,7 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 			continue;
 		}
 
-		printf("wifi_id: %d\t%x\r\n", sock_data_tmp.wifi_id, sock_data[sock_data_tmp.wifi_id].wifi_recv_flag);
+		printf("wifi_id: %d\t%x\t%d\r\n", sock_data_tmp.wifi_id, sock_data[sock_data_tmp.wifi_id].wifi_recv_flag, sock_data_tmp.valid);
 
 		BC_MsgInit(&qe, BC_MOD_DEFAULT, BC_MOD_WIFI);
 		WifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_QRY_ST;
@@ -655,7 +655,7 @@ sint32_t BC_Close(sint32_t sockfd)
 	}
 	// sprintf(pu8CmdMsg, "AT+CIPCLOSE=%d\r\n", sockfd);
 	// uputs(USART_WIFI, pu8CmdMsg);
-	// sock_data[sockfd].valid = BC_FALSE;
+	sock_data[sockfd].valid = BC_FALSE;
 	return BC_OK;
 }
 
