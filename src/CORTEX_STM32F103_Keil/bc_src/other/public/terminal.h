@@ -21,6 +21,7 @@ sint32_t TaskTerminalInit(void);
 // sint32_t CheckEndFlag(uint8_t * msg, uint32_t msg_size, uint8_t * flag, uint32_t flag_size);
 // TODO: maybe need a mutex
 sint32_t uputs(USART_TypeDef * usart, sint8_t * str);
+sint32_t uputn(USART_TypeDef * usart, sint8_t * str, uint32_t size);
 
 
 #endif

@@ -39,6 +39,9 @@ extern BC_SocketData sock_serv;
 #define BC_MOD_MYSELF BC_MOD_PHONE_APP
 
 uint8_t AppPanicMsg[64];
+uint8_t SrcBuf[128];
+uint8_t DstBuf[128];
+
 void TaskAppAgent(void *pvParameters)
 {
 	static sint32_t ret = BC_OK;
@@ -47,6 +50,7 @@ void TaskAppAgent(void *pvParameters)
 	uint32_t addr_len = sizeof(BC_Sockaddr);
 	sint32_t server_socket = 0;
 	sint32_t client_socket;
+	sint32_t trans_len = 0;
 
 	ret = TaskAppAgentInit();
 	if(ret != BC_OK) {
@@ -54,7 +58,6 @@ void TaskAppAgent(void *pvParameters)
 		/* Never return */
 		BC_Panic(AppPanicMsg);
 	}
-	// sint32_t trans_len = 0;
 
 	memset(&server_addr, 0, sizeof(BC_Sockaddr));
 	server_addr.sin_family = AF_INET;
@@ -80,7 +83,7 @@ void TaskAppAgent(void *pvParameters)
 
 	while(BC_TRUE) {
 		memset(&client_addr, 0, sizeof(BC_Sockaddr));
-		// memset(SrvBuf, 0, TASK_BUF_SIZE);
+		// memset(SrcBuf, 0, TASK_BUF_SIZE);
 		// memset(DstBuf, 0, TASK_BUF_SIZE);
 		client_socket = BC_Accept(server_socket, &client_addr,&addr_len);
 		// WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_CLI;
@@ -92,27 +95,27 @@ void TaskAppAgent(void *pvParameters)
 			printf("cli_addr:%s\r\n", client_addr.sin_addr.s_addr);
 			printf("cli_port:%d\r\n", client_addr.sin_port);
 		}
-		// trans_len = BC_Recv(client_socket, SrvBuf, TASK_BUF_SIZE, 0);
+		trans_len = BC_Recv(client_socket, SrcBuf, sizeof(SrcBuf), 0);
 		// WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_IPD;
-		// if(trans_len <= 0) {
-		// 	printf("Server Recv Failed\r\n");
-		// 	BC_Close(client_socket);
-		// 	continue;
-		// }
-		// printf("Recv from %s:%d\r\n", client_addr.sin_addr.s_addr, client_addr.sin_port);
-		// printf("Msg: #%s#\r\n", SrvBuf);
+		if(trans_len <= 0) {
+			printf("Server Recv Failed: %d\r\n", trans_len);
+			BC_Close(client_socket);
+			continue;
+		}
+		printf("Recv from %s:%d\r\n", client_addr.sin_addr.s_addr, client_addr.sin_port);
+		printf("Msg: #%s#\r\n", SrcBuf);
 		// printf("Echoing now...\r\n");
-		// sprintf(DstBuf, "Echo: %s", SrvBuf);
+		// sprintf(DstBuf, "Echo: %s", SrcBuf);
 		// trans_len = strlen(DstBuf);
 		// trans_len = BC_Send(client_socket, DstBuf, trans_len, 0);
 		// vTaskDelay(1000);
-		// WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
+		// // WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
 		// if(trans_len < 0) {
-		// 	printf("Server Send Failed\r\n");
+		// 	printf("Server Send Failed:%d\r\n", trans_len);
 		// 	BC_Close(client_socket);
 		// 	continue;
 		// }
-		vTaskDelay(1000/portTICK_RATE_MS);
+		// vTaskDelay(1000/portTICK_RATE_MS);
 		BC_Close(client_socket);
 	}
 

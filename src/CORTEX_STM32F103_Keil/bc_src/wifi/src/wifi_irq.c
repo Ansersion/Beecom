@@ -52,12 +52,17 @@ uint8_t WIFI_FLAG_SR_ST[] = "AT+CIFSR";
 uint32_t WIFI_FLAG_SR_ST_SIZE = sizeof(WIFI_FLAG_SR_ST) - 1;
 uint8_t WIFI_FLAG_CLOSED_ST[] = "AT+CIPCLOSE";
 uint32_t WIFI_FLAG_CLOSED_ST_SIZE = sizeof(WIFI_FLAG_CLOSED_ST) - 1;
+uint8_t WIFI_FLAG_SEND_ST[] = "AT+CIPSEND";
+uint32_t WIFI_FLAG_SEND_ST_SIZE = sizeof(WIFI_FLAG_SEND_ST) - 1;
 
 volatile void IrqUsartWifi(void)
 {
 	static uint32_t Index = 0;
 	static uint16_t RxData=0;
 	static sint32_t u32CurrentSockId = -1;
+	static sint32_t u32SendSockId = -1;
+	static sint32_t s8Ret;
+	// static uint32_t u32SendSockId
 	// BC_SocketData sock_data_tmp;
 
 	if(USART_GetITStatus(USART_WIFI, USART_IT_RXNE) == RESET) {
@@ -67,7 +72,9 @@ volatile void IrqUsartWifi(void)
 
 	UsartWifiBuf[Index++] = (uint8_t)RxData;
 	if('\r' == UsartWifiBuf[0] || '\n' == UsartWifiBuf[0]) {
-		Index = 0;
+		// if(!(WifiRecvFlag | WIFI_MSG_FLAG_SENDING)) {
+			Index = 0;
+		// }
 		return;
 	}
 	if(Index >= USART_WIFI_BUF_SIZE - 1) {
@@ -77,9 +84,11 @@ volatile void IrqUsartWifi(void)
 		return;
 	}
 	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_OK_END, WIFI_FLAG_OK_END_SIZE, TRUE)) {
-		WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
-		UsartWifiBuf[Index] = '\0';
-		Index = 0;
+		// if(!(WifiRecvFlag | WIFI_MSG_FLAG_SENDING)) {
+			WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
+			UsartWifiBuf[Index] = '\0';
+			Index = 0;
+		// }
 		return;
 	}
 	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_ERROR_END, WIFI_FLAG_ERROR_END_SIZE, TRUE)) {
@@ -109,6 +118,7 @@ volatile void IrqUsartWifi(void)
 			if(pdTRUE != xQueueSendFromISR(sock_data[sock_serv.wifi_id].queue_handle, &sock_data[sock_serv.wifi_id], NULL)) {
 				// sock_data[
 			}
+			Index = 0;
 			return;
 		}
 	}
@@ -117,6 +127,7 @@ volatile void IrqUsartWifi(void)
 			if(pdTRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
 				// sock_data[
 			}
+			Index = 0;
 			return;
 		}
 	}
@@ -126,21 +137,36 @@ volatile void IrqUsartWifi(void)
 			sock_data[sock_serv.wifi_id].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
 			if(pdTRUE != xQueueSendFromISR(sock_data[sock_serv.wifi_id].queue_handle, &sock_data[sock_serv.wifi_id], NULL)) {
 			}
+			Index = 0;
 			return;
 		}
 	}
-	// if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_IPD_ST, WIFI_FLAG_IPD_ST_SIZE, FALSE) && (WifiRecvFlag & WIFI_MSG_FLAG_GOT_IPD) == 0) {
-	// 	// if(ParseIPD(UsartWifiBuf, Index, &sock_data[0]) == 0) {
-	// 	// 	// if(pdTRUE != xQueueSendFromISR(xQueue0, &sock_data[0], &xHigherPriorityTaskWoken)) {
-	// 	// 	// 	// sprintf(msg_irs, "IPD QUE Err\r\n");
-	// 	// 	// } else {
-	// 	// 	// 	// sprintf(msg_irs, "IPD QUE OK\r\n");
-	// 	// 	// 	WifiRecvFlag |= WIFI_MSG_FLAG_GOT_IPD;
-	// 	// 	// }
-	// 	// 	Index = 0;
-	// 	// 	return;
-	// 	// }
+	// if((WifiRecvFlag | WIFI_MSG_FLAG_SENDING) || CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_SEND_ST, WIFI_FLAG_SEND_ST_SIZE, FALSE)) {
+	// 	WifiRecvFlag |= WIFI_MSG_FLAG_SENDING;
+	// 	s8Ret = ParseCIPSEND(UsartWifiBuf, Index, &sock_serv);
+	// 	if(0 == s8Ret) {
+	// 		if(pdTRUE != xQueueSendFromISR(sock_data[sock_serv.wifi_id].queue_handle, &sock_data[sock_serv.wifi_id], NULL)) {
+	// 		}
+	// 		WifiRecvFlag &= ~WIFI_MSG_FLAG_SENDING;
+	// 		Index = 0;
+	// 		return;
+	// 	} else if(0 > s8Ret) {
+	// 		WifiRecvFlag &= ~WIFI_MSG_FLAG_SENDING;
+	// 	}
 	// }
+	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_IPD_ST, WIFI_FLAG_IPD_ST_SIZE, FALSE) ) {
+		if(ParseIPD(UsartWifiBuf+WIFI_FLAG_IPD_ST_SIZE, Index-WIFI_FLAG_IPD_ST_SIZE, &sock_serv) == 0) {
+			memcpy(sock_data[sock_serv.wifi_id].buf, sock_serv.buf, sock_serv.ipd_size);
+			if(pdTRUE != xQueueSendFromISR(sock_data[sock_serv.wifi_id].queue_handle, &sock_serv, NULL)) {
+				// sprintf(msg_irs, "IPD QUE Err\r\n");
+			} else {
+				// sprintf(msg_irs, "IPD QUE OK\r\n");
+				// WifiRecvFlag |= WIFI_MSG_FLAG_GOT_IPD;
+			}
+			Index = 0;
+			return;
+		}
+	}
 }
 
 sint32_t ParseIPD(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data)
@@ -181,31 +207,21 @@ sint32_t ParseIPD(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data)
 			for(i = old_i; i < buf_size; i++) {
 				if(',' == buf[i]) {
 					socket_data->wifi_id = atoi((const char *)(&buf[old_i]));
-					IPDState = IPD_PARSE_COLON;
-					old_i = i+1;
-					break;
-				}
-			}
-			break;
-		case IPD_PARSE_COLON:
-			// sprintf(msg_irs,"IPD-COLON\r\n");
-			for(i = old_i; i < buf_size; i++) {
-				if(':' == buf[i]) {
 					IPDState = IPD_PARSE_LEN;
-					// PS: old_i is now at the first number of length
-					// old_i = i+1;
+					old_i = i+1;
 					break;
 				}
 			}
 			break;
 		case IPD_PARSE_LEN:
-			num = atoi((const char *)(&buf[old_i]));
-			socket_data->ipd_size = num;
-			// sprintf(msg_irs,"IPD-LEN=%d, %d\r\n", num, old_i);
+			// sprintf(msg_irs,"IPD-COLON\r\n");
 			for(i = old_i; i < buf_size; i++) {
 				if(':' == buf[i]) {
+					num = atoi((const char *)(&buf[old_i]));
+					socket_data->ipd_size = num;
 					IPDState = IPD_PARSE_CONTENT;
 					old_i = i+1;
+					return 0;
 					break;
 				}
 			}
@@ -607,6 +623,107 @@ sint32_t ParseCIPCLOSE(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_
 			CloseState = CIPCLOSE_PARSE_CHAR_EQUAL;
 			old_i = 0;
 			result = 2;
+			break;
+	}
+
+	return result;
+}
+
+sint32_t ParseCIPSEND(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data)
+{
+	static sint32_t SendState = CIPSEND_PARSE_RESULT_1;
+	static sint32_t i = 0, old_i = 0;
+	static sint32_t result = 0; // 0->Parse Completed, 1->Parsing..., 2->Error
+	static sint32_t wifi_id = -1;
+
+	if(!buf) {
+		// sprintf(msg_irs,"ret=-1\r\n");
+		return -1;
+	}
+	if(!socket_data) {
+		// sprintf(msg_irs,"ret=-2\r\n");
+		return -2;
+	}
+
+	result = 1;
+	// e.g:
+	// AT+CIPSEND=0,3
+	// 
+	// OK 
+	// >
+	// Recv 3 bytes
+	// 
+	// SEND OK
+	switch(SendState) {
+		case CIPSEND_PARSE_WIFI_ID:
+			for(i = old_i; i < buf_size; i++) {
+				if('=' == buf[i]) {
+					SendState = CIPSEND_PARSE_RESULT_1;
+					old_i = i+1;
+					wifi_id = atoi((const char *)&buf[old_i]);
+					break;
+				}
+			}
+			break;
+		case CIPSEND_PARSE_RESULT_1:
+			for(i = old_i; i < buf_size; i++) {
+				if('K' == buf[i] && i > 0 && 'O' == buf[i-1]) {
+					SendState = CIPSEND_PARSE_BRACKET;
+					// first OK end
+					old_i = 0;
+					break;
+				}
+			}
+			break;
+		case CIPSEND_PARSE_BRACKET:
+			for(i = old_i; i < buf_size; i++) {
+				if('>' == buf[i]) {
+					SendState = CIPSEND_PARSE_CHAR_s;
+					old_i = i+1;
+					break;
+				}
+			}
+			break;
+		case CIPSEND_PARSE_CHAR_s:
+			for(i = old_i; i < buf_size; i++) {
+				if('s' == buf[i]) {
+					SendState = CIPSEND_PARSE_STR_SEND;
+					old_i = i+1;
+					break;
+				}
+			}
+			break;
+		case CIPSEND_PARSE_STR_SEND:
+			for(i = old_i; i < buf_size; i++) {
+				if('D' == buf[i] && i > 3 &&
+				   'N' == buf[i-1]  &&
+				   'E' == buf[i-2]  &&
+				   'S' == buf[i-3]) {
+					SendState = CIPSEND_PARSE_RESULT_2;
+					old_i = i+1;
+					break;
+				}
+			}
+			break;
+		case CIPSEND_PARSE_RESULT_2:
+			if(buf_size - old_i > 2) {
+				if(' ' == buf[old_i] 	&& 
+				   'O' == buf[old_i+1] 	&& 
+				   'K' == buf[old_i+2]) {
+					result = 0;
+					socket_data->wifi_id = wifi_id;
+				} else {
+					result = 2;
+				}	
+				wifi_id = -1; // initialize
+				SendState = CIPSEND_PARSE_RESULT_1;
+				old_i = 0;
+			}
+			break;
+		default:
+			SendState = CIPSEND_PARSE_RESULT_1;
+			old_i = 0;
+			result = -3;
 			break;
 	}
 

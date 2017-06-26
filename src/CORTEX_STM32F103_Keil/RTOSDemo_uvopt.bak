@@ -434,7 +434,7 @@
       <Focus>0</Focus>
       <ColumnNumber>16</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>18</TopLine>
+      <TopLine>19</TopLine>
       <CurrentLine>20</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\bc_src\other\irq\STM32F10x.s</PathWithFileName>
@@ -650,8 +650,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>27</TopLine>
-      <CurrentLine>42</CurrentLine>
+      <TopLine>78</TopLine>
+      <CurrentLine>95</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\bc_src\phone_app\src\app_agent_task.c</PathWithFileName>
       <FilenameWithoutPath>app_agent_task.c</FilenameWithoutPath>
@@ -810,8 +810,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
-      <CurrentLine>1</CurrentLine>
+      <TopLine>723</TopLine>
+      <CurrentLine>740</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\bc_src\wifi\src\wifi_common.c</PathWithFileName>
       <FilenameWithoutPath>wifi_common.c</FilenameWithoutPath>

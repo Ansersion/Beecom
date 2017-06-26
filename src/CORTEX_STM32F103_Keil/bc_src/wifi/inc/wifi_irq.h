@@ -16,6 +16,8 @@
 #define WIFI_MSG_FLAG_GOT_CLI 				0x00000010
 #define WIFI_MSG_FLAG_GOT_IPD 				0x00000020
 
+#define WIFI_MSG_FLAG_SENDING 				0x80000100
+
 #define WIFI_MSG_FLAG_SERV_QUE_OVERFLOW 	0x20000000
 #define WIFI_MSG_FLAG_BUF_OVERFLOW 			0x40000000
 #define WIFI_MSG_FLAG_BUF_RESET 			0x80000000
@@ -64,6 +66,16 @@ enum CIPCLOSE_PARSE_STATE {
 	CIPCLOSE_PARSE_RESULT,
 };
 
+enum CIPSEND_PARSE_STATE {
+	CIPSEND_PARSE_NONE = 0,
+	CIPSEND_PARSE_WIFI_ID,
+	CIPSEND_PARSE_RESULT_1,
+	CIPSEND_PARSE_BRACKET,
+	CIPSEND_PARSE_CHAR_s,
+	CIPSEND_PARSE_STR_SEND,
+	CIPSEND_PARSE_RESULT_2,
+};
+
 extern uint8_t UsartWifiBuf[];
 extern uint32_t WifiRecvFlag;
 extern BC_Mutex WifiRecvFlagMutex;
@@ -73,6 +85,7 @@ sint32_t ParseIPD(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data)
 sint32_t ParseCIPSTATUS(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data);
 sint32_t ParseCIFSR(uint8_t * buf, uint32_t buf_size, uint8_t * addr_buf, uint32_t addr_buf_size);
 sint32_t ParseCIPCLOSE(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data);
+sint32_t ParseCIPSEND(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data);
 sint32_t TryDispatch(uint32_t sockfd, uint32_t msg_type, uint8_t * msg, uint32_t msg_size);
 
 #endif

@@ -20,6 +20,7 @@
 #include <wifi_common.h>
 
 typedef enum WIFI_CLBK_CMD_ID {
+	/*For wifi configure*/
 	WIFI_CLBK_CMD_NONE = 0,
 	WIFI_CLBK_CMD_RESET,
 	WIFI_CLBK_CMD_SET_MODE,
@@ -27,8 +28,11 @@ typedef enum WIFI_CLBK_CMD_ID {
 	WIFI_CLBK_CMD_SET_MUX,
 	WIFI_CLBK_CMD_SET_SERV,
 	WIFI_CLBK_CMD_QRY_SR,
+
+	/*For connection*/
 	WIFI_CLBK_CMD_QRY_ST,
 	WIFI_CLBK_CMD_CLOSE_SOCK,
+	WIFI_CLBK_CMD_SEND,
 }WIFI_CLBK_CMD_ID;
 
 /*WIFI_CLBK_CMD_RESET*/
@@ -78,9 +82,15 @@ typedef struct stWifiClbkStPara{
 
 /*WIFI_CLBK_CMD_CLOSE_SOCK*/
 typedef struct stWifiClbkClsSockPara{
-	// no use
-	uint32_t sockfd;
+	sint32_t sockfd;
 }stWifiClbkClsSockPara;
+
+/*WIFI_CLBK_CMD_SEND*/
+typedef struct stWifiClbkSendPara{
+	sint32_t sockfd;
+	uint8_t * msg;
+	uint32_t size;
+}stWifiClbkSendPara;
 
 /*********************/
 typedef union unWifiClbkPara {
@@ -92,6 +102,7 @@ typedef union unWifiClbkPara {
 	stWifiClbkSrPara 		SrPara;
 	stWifiClbkStPara 		StPara;
 	stWifiClbkClsSockPara 	ClsSockPara;
+	stWifiClbkSendPara 		SendPara;
 }unWifiClbkPara;
 
 typedef struct stWifiMsgUnit {

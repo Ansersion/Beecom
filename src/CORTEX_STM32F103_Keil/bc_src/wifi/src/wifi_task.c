@@ -140,8 +140,11 @@ sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg)
 				ret = BC_WifiQuerySt(NULL);
 				break;
 			case WIFI_CLBK_CMD_CLOSE_SOCK:
-				printf("BC_WifiCloseSock\r\n");
 				ret = BC_WifiCloseSock(msg_unit->ClbkPara.ClsSockPara.sockfd, NULL);
+				break;
+			case WIFI_CLBK_CMD_SEND:
+				printf("BC_WifiSend\r\n");
+				ret = BC_WifiSend(msg_unit->ClbkPara.SendPara.sockfd, msg_unit->ClbkPara.SendPara.msg, msg_unit->ClbkPara.SendPara.size, NULL);
 				break;
 			default:
 				break;

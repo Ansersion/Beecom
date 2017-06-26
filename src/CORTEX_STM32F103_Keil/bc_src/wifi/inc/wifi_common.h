@@ -108,6 +108,7 @@ sint32_t BC_WifiSetMux(WIFI_MUX mux_mode, uint32_t * timeout);
 sint32_t BC_WifiSetServ(WIFI_SERVER server_mode, uint16_t port, uint32_t * timeout);
 sint32_t BC_WifiQuerySr(uint32_t * timeout);
 sint32_t BC_WifiQuerySt(uint32_t * timeout);
+sint32_t BC_WifiCloseSock(sint32_t sockfd, uint32_t * timeout);
 
 // wifi APIs
 // They are similar to linux socket
@@ -121,7 +122,7 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen);
 sint32_t BC_Connect(sint32_t sockfd, const BC_Sockaddr * servaddr, uint32_t addrlen);
 sint32_t BC_Close(sint32_t sockfd);
 sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags);
-sint32_t BC_Send(sint32_t sockfd, const void * buff, uint32_t nbytes, sint32_t flags);
+sint32_t BC_Send(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags);
 
 sint32_t BC_Atoi(char n);
 

@@ -183,6 +183,22 @@ sint32_t uputs(USART_TypeDef * usart, sint8_t * str)
 	return 0;
 }
 
+sint32_t uputn(USART_TypeDef * usart, sint8_t * str, uint32_t size)
+{
+	if(!usart || !str) {
+		return -1;
+	}
+	if(0 == size) {
+		return 0;
+	}
+	for(;size != 0; size--) {
+		USART_SendData(usart,*str++);
+		while(USART_GetFlagStatus(usart,USART_FLAG_TC)!=SET);
+	}
+
+	return 0;
+}
+
 #if 1
 #pragma import(__use_no_semihosting)             
 struct __FILE 
