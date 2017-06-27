@@ -763,6 +763,7 @@ sint32_t BC_Close(sint32_t sockfd)
 			if(fail_count > 3) {
 				// sock_data_tmp.wifi_id = BC_MAX_SOCKET_NUM+1;
 				// break;
+				printf("close fail\r\n");
 				sock_data[sockfd].valid = BC_FALSE;
 				return BC_ERR;
 			}

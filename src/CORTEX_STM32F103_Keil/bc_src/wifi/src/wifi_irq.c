@@ -221,7 +221,6 @@ sint32_t ParseIPD(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_data)
 					socket_data->ipd_size = num;
 					IPDState = IPD_PARSE_CONTENT;
 					old_i = i+1;
-					return 0;
 					break;
 				}
 			}
@@ -585,7 +584,7 @@ sint32_t ParseCIPCLOSE(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_
 			break;
 		case CIPCLOSE_PARSE_SOCKET_ID:
 			if(isdigit(buf[old_i])) {
-				socket_data->wifi_id = BC_Atoi(buf[old_i]);
+				socket_data->wifi_id = atoi((const char *)&buf[old_i]);
 				CloseState = CIPCLOSE_PARSE_CHAR_D;
 				old_i += 1;
 			} else {
@@ -606,16 +605,21 @@ sint32_t ParseCIPCLOSE(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_
 		case CIPCLOSE_PARSE_RESULT:
 			for(i = old_i; i < buf_size; i++) {
 				if(isalpha(buf[i])) {
-					if('O' == buf[i]) {
-						// OK
-						// no idea temporarily
-					} else if('E' == buf[i]) {
-						// ERROR
-						// no idea temporarily
+					if('O' == buf[i-1] && 
+					   'K' == buf[i]) {
+						CloseState = CIPCLOSE_PARSE_CHAR_EQUAL;
+						old_i = 0;
+						result = 0;
+					} else if('R' == buf[i-4] 	&&
+							  'O' == buf[i-3] 	&&
+							  'R' == buf[i-2] 	&&
+							  'R' == buf[i-1] 	&&
+							  'E' == buf[i] 	
+							) {
+						CloseState = CIPCLOSE_PARSE_CHAR_EQUAL;
+						old_i = 0;
+						result = 0;
 					}
-					CloseState = CIPCLOSE_PARSE_CHAR_EQUAL;
-					old_i = 0;
-					result = 0;
 				}
 			}
 			break;
