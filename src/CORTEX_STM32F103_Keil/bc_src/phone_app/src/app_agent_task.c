@@ -104,20 +104,19 @@ void TaskAppAgent(void *pvParameters)
 		}
 		printf("Recv from %s:%d\r\n", client_addr.sin_addr.s_addr, client_addr.sin_port);
 		printf("Msg: #%s#\r\n", SrcBuf);
-		// printf("Echoing now...\r\n");
-		// sprintf(DstBuf, "Echo: %s", SrcBuf);
-		// trans_len = strlen(DstBuf);
-		// trans_len = BC_Send(client_socket, DstBuf, trans_len, 0);
-		// vTaskDelay(1000);
-		// // WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
-		// if(trans_len < 0) {
-		// 	printf("Server Send Failed:%d\r\n", trans_len);
-		// 	BC_Close(client_socket);
-		// 	continue;
-		// }
-		// vTaskDelay(1000/portTICK_RATE_MS);
+		printf("Echoing now...\r\n");
+		sprintf(DstBuf, "Echo: %s", SrcBuf);
+		trans_len = strlen(DstBuf);
+		trans_len = BC_Send(client_socket, DstBuf, trans_len, 0);
+		// WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
+		if(trans_len < 0) {
+			printf("Server Send Failed:%d\r\n", trans_len);
+			BC_Close(client_socket);
+			continue;
+		}
+		vTaskDelay(1000/portTICK_RATE_MS);
 		ret = BC_Close(client_socket);
-		printf("BC_Close:%d\r\n");
+		printf("BC_Close:%d\r\n", ret);
 	}
 
 	// BC_Close(server_socket);

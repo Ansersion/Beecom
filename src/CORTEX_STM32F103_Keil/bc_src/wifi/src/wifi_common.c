@@ -447,7 +447,9 @@ sint32_t BC_WifiCloseSock(sint32_t sockfd, uint32_t * timeout)
 {
 	sint32_t ret = BC_OK;
 	uint32_t fail_count = 0;
+	sint32_t already_sent = 0;
 	printf("Close sock\r\n");
+
 
 	while(1) {
 		// check max failed count
@@ -456,29 +458,45 @@ sint32_t BC_WifiCloseSock(sint32_t sockfd, uint32_t * timeout)
 			break;
 		}
 		// send command
-		sprintf(pu8CmdMsg, WifiCmdCloseSock, sockfd);
-		uputs(USART_WIFI, pu8CmdMsg);
+		if(!already_sent) {
+			already_sent = 1;
+			sprintf(pu8CmdMsg, WifiCmdCloseSock, sockfd);
+			printf("Close sock: end uputs1\r\n");
+			printf("WifiRecvFlag1:%x\r\n", WifiRecvFlag);
+			uputs(USART_WIFI, pu8CmdMsg);
+			printf("WifiRecvFlag2:%x\r\n", WifiRecvFlag);
+		}
+		printf("WifiRecvFlag3:%x\r\n", WifiRecvFlag);
+		printf("Close sock: end uputs2\r\n");
 		// delay a little time(at least) 
-		vTaskDelay(10 / portTICK_RATE_MS); // at least delay 10ms
 		// delay 'timeout' microseconds if any
+		// printf("Close sock: end uputs\r\n");
+		vTaskDelay(1000 / portTICK_RATE_MS); // at least delay 10ms
 		if(timeout) {
 			vTaskDelay(*timeout / portTICK_RATE_MS);
 		}
 		if(BCMutexLock(&WifiRecvFlagMutex) == BC_OK) {
 			// check if setting OK
+			printf("lock ok\r\n");
 			if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK) {
 				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
 				BCMutexUnlock(&WifiRecvFlagMutex);
 				ret = BC_OK;
+				printf("Close sock ok\r\n");
 				break;
 			// check if setting error
 			} else if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_ERR) {
 				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_ERR;
 				BCMutexUnlock(&WifiRecvFlagMutex);
+				printf("Close sock err\r\n");
 				ret = -4;
 				break;
 			}
 			BCMutexUnlock(&WifiRecvFlagMutex);
+		}
+		else
+		{
+			printf("lock err\r\n");
 		}
 		// after 'timeout' microseconds there is no
 		// result, so return error
@@ -496,21 +514,38 @@ sint32_t BC_WifiSend(sint32_t sockfd, uint8_t * msg, uint32_t size, uint32_t * t
 {
 	sint32_t ret = BC_OK;
 	uint32_t fail_count = 0;
-	printf("send\r\n");
+
+	if(!msg)
+	{
+		return -2;
+	}
+	if(!ASSERT_SOCK_VALID(sockfd))
+	{
+		return -3;
+	}
+
+	printf("send2:%p\r\n", msg);
+	printf("send:%s, %d\r\n", msg, size);
 
 	while(1) {
 		// check max failed count
-		if(++fail_count > WIFI_CIP_CLS_MAX_FAIL_COUNT) {
+		if(++fail_count > WIFI_CIP_SEND_MAX_FAIL_COUNT) {
 			ret = -10;
 			break;
 		}
 		// send command
+		printf("start send:%d, %d\r\n", sockfd, size);
 		sprintf(pu8CmdMsg, WifiCmdSend, sockfd, size);
+		printf("Send-WifiRecvFlag1:%x\r\n", WifiRecvFlag);
 		uputs(USART_WIFI, pu8CmdMsg);
 		// delay a little time(at least) 
-		vTaskDelay(10 / portTICK_RATE_MS); // at least delay 10ms
+		vTaskDelay(1000 / portTICK_RATE_MS); // at least delay 10ms
+		printf("Send-WifiRecvFlag2:%x\r\n", WifiRecvFlag);
 		uputn(USART_WIFI, msg, size);
-		vTaskDelay(10 / portTICK_RATE_MS); // at least delay 10ms
+		vTaskDelay(1000 / portTICK_RATE_MS); // at least delay 10ms
+		printf("Send-WifiRecvFlag3:%x\r\n", WifiRecvFlag);
+		// printf("sending end\r\n");
+		// sprintf(pu8CmdMsg, WifiCmdSend, sockfd, size);
 		// delay 'timeout' microseconds if any
 		if(timeout) {
 			vTaskDelay(*timeout / portTICK_RATE_MS);
@@ -520,11 +555,13 @@ sint32_t BC_WifiSend(sint32_t sockfd, uint8_t * msg, uint32_t size, uint32_t * t
 			if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_OK) {
 				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
 				BCMutexUnlock(&WifiRecvFlagMutex);
+				printf("sending ok\r\n");
 				ret = BC_OK;
 				break;
 			// check if setting error
 			} else if(WifiRecvFlag & WIFI_MSG_FLAG_GENERAL_ERR) {
 				WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_ERR;
+				printf("sending err\r\n");
 				BCMutexUnlock(&WifiRecvFlagMutex);
 				ret = -4;
 				break;
@@ -754,11 +791,13 @@ sint32_t BC_Close(sint32_t sockfd)
 	WifiMsgUnit.ClbkPara.ClsSockPara.sockfd = sockfd;
 	BC_MsgSetMsg(&qe, (uint8_t *)&WifiMsgUnit, sizeof(WifiMsgUnit));
 	while(1) {
-		while(BC_Enqueue(BC_ModInQueue[BC_MOD_DEFAULT], &qe, TIMEOUT_COMMON) == BC_FALSE) {
+		while(BC_Enqueue(BC_ModInQueue[BC_MOD_DEFAULT], &qe, 3*TIMEOUT_COMMON) == BC_FALSE) {
 		}
 		vTaskResume(DataHubHandle);
 
-		if(pdFALSE == xQueueReceive(sock_data[sockfd].queue_handle, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
+		printf("close enqueue == true\r\n");
+		// if(pdFALSE == xQueueReceive(sock_data[sockfd].queue_handle, &sock_data_tmp, 5000/portTICK_RATE_MS)) {
+		while(pdFALSE == xQueueReceive(sock_data[sockfd].queue_handle, &sock_data_tmp, 1500/portTICK_RATE_MS)) {
 			fail_count++;
 			if(fail_count > 3) {
 				// sock_data_tmp.wifi_id = BC_MAX_SOCKET_NUM+1;
@@ -767,9 +806,13 @@ sint32_t BC_Close(sint32_t sockfd)
 				sock_data[sockfd].valid = BC_FALSE;
 				return BC_ERR;
 			}
-		} else {
-			break;
+			printf("close:serv.wifi_id_1=%d\r\n", sock_serv.wifi_id);
+		// } else {
+		// 	break;
 		}
+	vTaskDelay(500/portTICK_RATE_MS);
+	printf("close:serv.wifi_id_2=%d\r\n", sock_serv.wifi_id);
+	break;
 	}
 	// sprintf(pu8CmdMsg, "AT+CIPCLOSE=%d\r\n", sockfd);
 	// uputs(USART_WIFI, pu8CmdMsg);
@@ -858,7 +901,8 @@ sint32_t BC_Send(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
 	BC_MsgInit(&qe, BC_MOD_DEFAULT, BC_MOD_WIFI);
 	WifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SEND;
 	WifiMsgUnit.ClbkPara.SendPara.sockfd = sockfd;
-	WifiMsgUnit.ClbkPara.SendPara.msg = buff;
+	WifiMsgUnit.ClbkPara.SendPara.msg = (uint8_t *)buff;
+	printf("send_msg_addr:%p\r\n", WifiMsgUnit.ClbkPara.SendPara.msg);
 	WifiMsgUnit.ClbkPara.SendPara.size = nbytes;
 	BC_MsgSetMsg(&qe, (uint8_t *)&WifiMsgUnit, sizeof(WifiMsgUnit));
 	while(1) {
@@ -866,33 +910,25 @@ sint32_t BC_Send(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
 		}
 		vTaskResume(DataHubHandle);
 
-		if(pdFALSE == xQueueReceive(sock_data[sockfd].queue_handle, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
+		if(pdFALSE == xQueueReceive(sock_data[sockfd].queue_handle, &sock_data_tmp, 5000/portTICK_RATE_MS)) {
+		// if(pdFALSE == xQueueReceive(sock_serv.queue_handle, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
 			fail_count++;
+			printf("send wifi id1: %d\r\n", sock_data_tmp.wifi_id);
 			if(fail_count > 3) {
 				// sock_data_tmp.wifi_id = BC_MAX_SOCKET_NUM+1;
 				// break;
+				printf("send fail\r\n");
 				sock_data[sockfd].valid = BC_FALSE;
-				return -1;
+				return -4;
 			}
 		} else {
+			// vTaskDelay(100);
+			printf("send wifi id2: %d\r\n", sock_data_tmp.wifi_id);
 			// TODO: Check Send OK
+			printf("send ok\r\n");
 			break;
 		}
 	}
-
-	// memset(pu8CmdMsg, 0, sizeof(pu8CmdMsg));
-
-	// WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
-	// sprintf(pu8CmdMsg, "AT+CIPSEND=%d,%d\r\n", sockfd, nbytes);
-	// uputs(USART_WIFI, pu8CmdMsg);
-	// vTaskDelay(1000); // TODO
-	// WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
-	// buf_tmp = (uint8_t *)buff;
-	// for(i = 0; i < nbytes; i++) {
-	// 	USART_SendData(USART_WIFI, buf_tmp[i]);
-	// 	while(USART_GetFlagStatus(USART_WIFI,USART_FLAG_TC)!=SET);
-	// }
-
 	return nbytes;
 }
 
