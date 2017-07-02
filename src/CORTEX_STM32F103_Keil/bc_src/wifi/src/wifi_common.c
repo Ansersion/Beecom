@@ -678,6 +678,7 @@ sint32_t BC_Listen(sint32_t sockfd, sint32_t backlog)
 sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 {
 	BC_SocketData sock_data_tmp;
+	BC_SocketData * SockServ = NULL;
 	uint32_t fail_count = 0;
 	uint32_t wifi_id = 0;
 	BC_QueueElement qe;
@@ -692,6 +693,10 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 	if(!addrlen) {
 		return -3;
 	}
+	SockServ = GetSockData(SOCK_SERV_FD);
+	if(!SockServ) {
+		return -11;
+	}
 	// if(BC_TRUE != sock_data[sockfd].valid) {
 	// 	return -4;
 	// }
@@ -701,8 +706,8 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 	// k_addrlen = addrlen;
 
 	while(1) {
-		if(pdFALSE == xQueueReceive(sock_serv.queue_handle, &sock_data_tmp, 5000/portTICK_RATE_MS)) {
-			printf("addr1: %s\r\n", INADDR_ANY);
+		if(pdFALSE == xQueueReceive(SockServ->queue_handle, &sock_data_tmp, 5000/portTICK_RATE_MS)) {
+			printf("addr4: %s\r\n", INADDR_ANY);
 			continue;
 		}
 		if(!(sock_data[sock_data_tmp.wifi_id].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CONNECT)) {
@@ -731,7 +736,7 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 				break;
 			}
 		}
-		printf("backlog-s: %d\r\n", sock_serv.backlog);
+		printf("backlog-s: %d\r\n", SockServ->backlog);
 		printf("backlog-t: %d\r\n", sock_data_tmp.backlog);
 		printf("recv-t: %d\r\n", sock_data_tmp.wifi_recv_flag);
 		printf("client-ip: %s\r\n", sock_data_tmp.addr.sin_addr.s_addr);
@@ -779,12 +784,17 @@ sint32_t BC_Close(sint32_t sockfd)
 	BC_QueueElement qe;
 	stWifiMsgUnit WifiMsgUnit;
 	BC_SocketData sock_data_tmp;
+	BC_SocketData * SockServ = NULL;
 
 	if(!ASSERT_SOCK_VALID(sockfd)) {
 		return -1;
 	}
 	if(!sock_data[sockfd].valid) {
 		return -2;
+	}
+	SockServ = GetSockData(SOCK_SERV_FD);
+	if(!SockServ) {
+		return -11;
 	}
 	BC_MsgInit(&qe, BC_MOD_DEFAULT, BC_MOD_WIFI);
 	WifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_CLOSE_SOCK;
@@ -806,12 +816,12 @@ sint32_t BC_Close(sint32_t sockfd)
 				sock_data[sockfd].valid = BC_FALSE;
 				return BC_ERR;
 			}
-			printf("close:serv.wifi_id_1=%d\r\n", sock_serv.wifi_id);
+			printf("close:serv.wifi_id_1=%d\r\n", SockServ->wifi_id);
 		// } else {
 		// 	break;
 		}
 	vTaskDelay(500/portTICK_RATE_MS);
-	printf("close:serv.wifi_id_2=%d\r\n", sock_serv.wifi_id);
+	printf("close:serv.wifi_id_2=%d\r\n", SockServ->wifi_id);
 	break;
 	}
 	// sprintf(pu8CmdMsg, "AT+CIPCLOSE=%d\r\n", sockfd);
@@ -823,6 +833,8 @@ sint32_t BC_Close(sint32_t sockfd)
 sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
 {
 	BC_SocketData sock_data_tmp;
+	BC_SocketData * SockServ = NULL;
+
 	if(!ASSERT_SOCK_VALID(sockfd)) {
 		return -1;
 	}
@@ -832,23 +844,27 @@ sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
 	if(!sock_data[sockfd].valid) {
 		return -3;
 	}
+	SockServ = GetSockData(SOCK_SERV_FD);
+	if(!SockServ) {
+		return -11;
+	}
 	sock_data_tmp.wifi_id = -1;
 	while(BC_FALSE == xQueueReceive(sock_data[sockfd].queue_handle, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
 		// TODO:
 		printf("BC_Recv: xQueueReceive == pdFALSE:%d\r\n", sockfd);
-		printf("BC_Recv: wifi_id:%d\r\n", sock_serv.wifi_id);
-		printf("BC_Recv: ipd_size:%d\r\n", sock_serv.ipd_size);
+		printf("BC_Recv: wifi_id:%d\r\n", SockServ->wifi_id);
+		printf("BC_Recv: ipd_size:%d\r\n", SockServ->ipd_size);
 		// Judge if remote close
 	}
 	printf("BC_Recv: xQueueReceive == pdTRUE\r\n");
-	printf("BC_Recv: wifi_id(serv):%d\r\n", sock_serv.wifi_id);
-	printf("BC_Recv: ipd_size(serv):%d\r\n", sock_serv.ipd_size);
+	printf("BC_Recv: wifi_id(serv):%d\r\n", SockServ->wifi_id);
+	printf("BC_Recv: ipd_size(serv):%d\r\n", SockServ->ipd_size);
 	printf("BC_Recv: wifi_id:%d\r\n", sock_data_tmp.wifi_id);
 	printf("BC_Recv: ipd_size:%d\r\n", sock_data_tmp.ipd_size);
 	sock_data[sock_data_tmp.wifi_id].buf[sock_data_tmp.ipd_size] = '\0';
 	printf("BC_Recv: str:%s\r\n", sock_data[sock_data_tmp.wifi_id].buf);
-	sock_serv.buf[sock_serv.ipd_size] = '\0';
-	printf("BC_Recv: str(serv):%s\r\n", sock_serv.buf);
+	SockServ->buf[SockServ->ipd_size] = '\0';
+	printf("BC_Recv: str(serv):%s\r\n", SockServ->buf);
 	// if(sock_data[sockfd].wifi_recv_flag | WIFI_MSG_FLAG_GOT_CONNECT | WIFI_MSG_FLAG_GOT_CLOSED) {
 	// if(sock_data[sockfd].wifi_recv_flag | WIFI_MSG_FLAG_GOT_CLOSED) {
 	// 	return -4;
@@ -911,7 +927,7 @@ sint32_t BC_Send(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
 		vTaskResume(DataHubHandle);
 
 		if(pdFALSE == xQueueReceive(sock_data[sockfd].queue_handle, &sock_data_tmp, 5000/portTICK_RATE_MS)) {
-		// if(pdFALSE == xQueueReceive(sock_serv.queue_handle, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
+		// if(pdFALSE == xQueueReceive(SockServ->queue_handle, &sock_data_tmp, 1000/portTICK_RATE_MS)) {
 			fail_count++;
 			printf("send wifi id1: %d\r\n", sock_data_tmp.wifi_id);
 			if(fail_count > 3) {

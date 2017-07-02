@@ -31,8 +31,8 @@
 // test
 #include <terminal.h>
 
-extern BC_SocketData sock_data[];
-extern BC_SocketData sock_serv;
+// extern BC_SocketData sock_data[];
+// extern BC_SocketData sock_serv;
 
 uint8_t UsartWifiBuf[USART_WIFI_BUF_SIZE];
 uint32_t WifiRecvFlag = 0;
@@ -57,7 +57,7 @@ uint8_t WIFI_FLAG_CLOSED_ST[] = "AT+CIPCLOSE";
 uint32_t WIFI_FLAG_CLOSED_ST_SIZE = sizeof(WIFI_FLAG_CLOSED_ST) - 1;
 uint8_t WIFI_FLAG_SEND_ST[] = "AT+CIPSEND";
 uint32_t WIFI_FLAG_SEND_ST_SIZE = sizeof(WIFI_FLAG_SEND_ST) - 1;
-static char x[4];
+// static char x[4];
 
 volatile void IrqUsartWifi(void)
 {
@@ -66,9 +66,16 @@ volatile void IrqUsartWifi(void)
 	static sint32_t u32CurrentSockId = -1;
 	static sint32_t u32SendSockId = -1;
 	static sint32_t s8Ret;
-	x[3] = '\0';
-	x[2] = '\n';
-	x[1] = '\r';
+	static BC_SocketData * SockServ = NULL;
+
+	SockServ = GetSockData(SOCK_SERV_FD);
+	if(!SockServ) {
+		WifiRecvFlag |= WIFI_MSG_FLAG_INVALID_SOCK_SERV;
+		return;
+	}
+	// x[3] = '\0';
+	// x[2] = '\n';
+	// x[1] = '\r';
 	// static uint32_t u32SendSockId
 	// BC_SocketData sock_data_tmp;
 
@@ -122,9 +129,9 @@ volatile void IrqUsartWifi(void)
 	}
 
 	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_STATUS_ST, WIFI_FLAG_STATUS_ST_SIZE, FALSE)) {
-		if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_data[sock_serv.wifi_id]) == 0) {
-			sock_serv.wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
-			if(pdTRUE != xQueueSendFromISR(sock_data[sock_serv.wifi_id].queue_handle, &sock_data[sock_serv.wifi_id], NULL)) {
+		if(ParseCIPSTATUS(UsartWifiBuf+WIFI_FLAG_STATUS_ST_SIZE, Index-WIFI_FLAG_STATUS_ST_SIZE, &sock_data[SockServ->wifi_id]) == 0) {
+			SockServ->wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
+			if(pdTRUE != xQueueSendFromISR(sock_data[SockServ->wifi_id].queue_handle, &sock_data[SockServ->wifi_id], NULL)) {
 				// sock_data[
 			}
 			Index = 0;
@@ -133,7 +140,7 @@ volatile void IrqUsartWifi(void)
 	}
 	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_SR_ST, WIFI_FLAG_SR_ST_SIZE, FALSE)) {
 		if(ParseCIFSR(UsartWifiBuf+WIFI_FLAG_SR_ST_SIZE, Index-WIFI_FLAG_SR_ST_SIZE, INADDR_ANY, 16) == 0) {
-			if(pdTRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+			if(pdTRUE != xQueueSendFromISR(SockServ->queue_handle, SockServ, NULL)) {
 				// sock_data[
 			}
 			Index = 0;
@@ -143,14 +150,14 @@ volatile void IrqUsartWifi(void)
 	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_CLOSED_ST, WIFI_FLAG_CLOSED_ST_SIZE, FALSE)) {
 		// x[0] = 'x';
 		// uputn(USART_TERMINAL, x, 3);
-		if(ParseCIPCLOSE(UsartWifiBuf+WIFI_FLAG_CLOSED_ST_SIZE, Index-WIFI_FLAG_CLOSED_ST_SIZE, &sock_serv) == 0) {
+		if(ParseCIPCLOSE(UsartWifiBuf+WIFI_FLAG_CLOSED_ST_SIZE, Index-WIFI_FLAG_CLOSED_ST_SIZE, SockServ) == 0) {
 			// x[0] = 'z';
 			// uputn(USART_TERMINAL, x, 3);
-			sock_data[sock_serv.wifi_id].wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
-			sock_data[sock_serv.wifi_id].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
+			sock_data[SockServ->wifi_id].wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
+			sock_data[SockServ->wifi_id].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
 			// sock_data[0].wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
 			// sock_data[0].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
-			if(pdTRUE != xQueueSendFromISR(sock_data[sock_serv.wifi_id].queue_handle, &sock_data[sock_serv.wifi_id], NULL)) {
+			if(pdTRUE != xQueueSendFromISR(sock_data[SockServ->wifi_id].queue_handle, &sock_data[SockServ->wifi_id], NULL)) {
 			}
 			// if(pdTRUE != xQueueSendFromISR(sock_data[0].queue_handle, &sock_data[0], NULL)) {
 			// }
@@ -165,11 +172,11 @@ volatile void IrqUsartWifi(void)
 	}
 	if((WifiRecvFlag & WIFI_MSG_FLAG_SENDING) || (BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_SEND_ST, WIFI_FLAG_SEND_ST_SIZE, FALSE))) {
 		WifiRecvFlag |= WIFI_MSG_FLAG_SENDING;
-		s8Ret = ParseCIPSEND(UsartWifiBuf, Index, &sock_serv);
+		s8Ret = ParseCIPSEND(UsartWifiBuf, Index, SockServ);
 		if(0 == s8Ret) {
-			if(pdTRUE != xQueueSendFromISR(sock_data[sock_serv.wifi_id].queue_handle, &sock_data[sock_serv.wifi_id], NULL)) {
+			if(pdTRUE != xQueueSendFromISR(sock_data[SockServ->wifi_id].queue_handle, &sock_data[SockServ->wifi_id], NULL)) {
 			}
-			// if(pdTRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+			// if(pdTRUE != xQueueSendFromISR(SockServ.queue_handle, &SockServ, NULL)) {
 			// }
 			WifiRecvFlag &= ~WIFI_MSG_FLAG_SENDING;
 			WifiRecvFlag |= WIFI_MSG_FLAG_GENERAL_OK;
@@ -188,9 +195,9 @@ volatile void IrqUsartWifi(void)
 		// TODO: check forever sending
 	}
 	if(BC_OK == CheckDataFlag(UsartWifiBuf, Index, WIFI_FLAG_IPD_ST, WIFI_FLAG_IPD_ST_SIZE, FALSE) ) {
-		if(ParseIPD(UsartWifiBuf+WIFI_FLAG_IPD_ST_SIZE, Index-WIFI_FLAG_IPD_ST_SIZE, &sock_serv) == 0) {
-			memcpy(sock_data[sock_serv.wifi_id].buf, sock_serv.buf, sock_serv.ipd_size);
-			if(pdTRUE != xQueueSendFromISR(sock_data[sock_serv.wifi_id].queue_handle, &sock_serv, NULL)) {
+		if(ParseIPD(UsartWifiBuf+WIFI_FLAG_IPD_ST_SIZE, Index-WIFI_FLAG_IPD_ST_SIZE, SockServ) == 0) {
+			memcpy(sock_data[SockServ->wifi_id].buf, SockServ->buf, SockServ->ipd_size);
+			if(pdTRUE != xQueueSendFromISR(sock_data[SockServ->wifi_id].queue_handle, SockServ, NULL)) {
 				// sprintf(msg_irs, "IPD QUE Err\r\n");
 			} else {
 				// sprintf(msg_irs, "IPD QUE OK\r\n");
@@ -526,54 +533,61 @@ sint32_t ParseCIFSR(uint8_t * buf, uint32_t buf_size, uint8_t * addr_buf, uint32
 
 sint32_t TryDispatch(uint32_t sockfd, uint32_t msg_type, uint8_t * msg, uint32_t msg_size)
 {
+	static BC_SocketData * SockServ = NULL;
+	SockServ = GetSockData(SOCK_SERV_FD);
+	if(!SockServ) {
+		WifiRecvFlag |= WIFI_MSG_FLAG_INVALID_SOCK_SERV;
+		return;
+	}
+
 	if(!msg) {
-		sock_serv.backlog = -1;
+		// SockServ.backlog = -1;
 		return -1;
 	}
 	if(!ASSERT_SOCK_VALID(sockfd)) {
-		sock_serv.backlog = -2;
+		// SockServ.backlog = -2;
 		return -2;
 	}
 
 	switch(msg_type) {
 		case WIFI_MSG_FLAG_GOT_CONNECT:
-			sock_serv.backlog = -9;
+			// SockServ.backlog = -9;
 			if(sock_data[sockfd].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CONNECT) {
-				sock_serv.backlog = -3;
+				// SockServ.backlog = -3;
 				return -3;
 			}
 			// TODO: Check net-internet client sockfd
 			if(BC_OK != CheckDataFlag(msg, msg_size, WIFI_FLAG_CONN_END, WIFI_FLAG_CONN_END_SIZE, TRUE)) {
-				sock_serv.backlog = -4;
+				// SockServ.backlog = -4;
 				return -4;
 			}
 			// TODO: Add mutex
-			sock_serv.wifi_id = sockfd;
-			// sock_serv.wifi_recv_flag |= 0x1000000000;
+			SockServ->wifi_id = sockfd;
+			// SockServ.wifi_recv_flag |= 0x1000000000;
 			sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CONNECT;
 			sock_data[sockfd].wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CLOSED;
-			if(BC_TRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+			if(BC_TRUE != xQueueSendFromISR(SockServ->queue_handle, SockServ, NULL)) {
 				sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_SERV_QUE_OVERFLOW;
 			} 
 			return BC_OK;
 		case WIFI_MSG_FLAG_GOT_CLOSED:
 			// TODO: Add mutex
-				sock_serv.backlog = -6;
+				// SockServ.backlog = -6;
 			// if(!(sock_data[sockfd].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CLOSED)) {
-			// 	sock_serv.backlog = -5;
+			// 	SockServ.backlog = -5;
 			// 	return -3;
 			// }
 			// TODO: Check net-internet client sockfd
 			if(BC_OK != CheckDataFlag(msg, msg_size, WIFI_FLAG_CLOSED_END, WIFI_FLAG_CLOSED_END_SIZE, TRUE)) {
-				sock_serv.backlog = -7;
+				// SockServ.backlog = -7;
 				return -4;
 			}
 			// TODO: Add mutex
-			sock_serv.backlog = -8;
-			sock_serv.wifi_id = sockfd;
+			// SockServ.backlog = -8;
+			SockServ->wifi_id = sockfd;
 			// sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_GOT_CLOSED;
 			sock_data[sockfd].wifi_recv_flag &= ~WIFI_MSG_FLAG_GOT_CONNECT;
-			if(BC_TRUE != xQueueSendFromISR(sock_serv.queue_handle, &sock_serv, NULL)) {
+			if(BC_TRUE != xQueueSendFromISR(SockServ->queue_handle, SockServ, NULL)) {
 				sock_data[sockfd].wifi_recv_flag |= WIFI_MSG_FLAG_SERV_QUE_OVERFLOW;
 			}
 			return BC_OK;
@@ -677,8 +691,8 @@ sint32_t ParseCIPCLOSE(uint8_t * buf, uint32_t buf_size, BC_SocketData * socket_
 			}
 			break;
 		default:
-			x[0] = 'E';
-			uputn(USART_TERMINAL, x, 3);
+			// x[0] = 'E';
+			// uputn(USART_TERMINAL, x, 3);
 			CloseState = CIPCLOSE_PARSE_CHAR_EQUAL;
 			old_i = 0;
 			result = 2;

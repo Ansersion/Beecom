@@ -32,7 +32,7 @@
 #include <app_agent_common.h>
 
 extern TaskHandle_t DataHubHandle;
-extern BC_SocketData sock_serv;
+// extern BC_SocketData sock_serv;
 
 #define LED_GREEN_TURN() (GPIOD->ODR ^= 1<<2) // green
 
