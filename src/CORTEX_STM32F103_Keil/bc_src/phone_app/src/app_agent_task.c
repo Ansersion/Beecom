@@ -53,8 +53,10 @@ void TaskAppAgent(void *pvParameters)
 	sint32_t trans_len = 0;
 
 	ret = TaskAppAgentInit();
+
 	if(ret != BC_OK) {
 		sprintf(AppPanicMsg, "AppAgent Init: ErrCode=%d", ret);
+
 		/* Never return */
 		BC_Panic(AppPanicMsg);
 	}
@@ -89,48 +91,40 @@ void TaskAppAgent(void *pvParameters)
 		// WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_CLI;
 		if (client_socket < 0) {
 			printf("Server Accept Failed:%d\r\n", client_socket);
-			break;
-		} else {
-			printf("cli_sockfd:%d\r\n", client_socket);
-			printf("cli_addr:%s\r\n", client_addr.sin_addr.s_addr);
-			printf("cli_port:%d\r\n", client_addr.sin_port);
-		}
+			// break;
+			continue;
+		} 
+		// else {
+		// 	printf("cli_sockfd:%d\r\n", client_socket);
+		// 	printf("cli_addr:%s\r\n", client_addr.sin_addr.s_addr);
+		// 	printf("cli_port:%d\r\n", client_addr.sin_port);
+		// }
 		trans_len = BC_Recv(client_socket, SrcBuf, sizeof(SrcBuf), 0);
-		// WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_IPD;
 		if(trans_len <= 0) {
 			printf("Server Recv Failed: %d\r\n", trans_len);
 			BC_Close(client_socket);
 			continue;
 		}
-		printf("Recv from %s:%d\r\n", client_addr.sin_addr.s_addr, client_addr.sin_port);
-		printf("Msg: #%s#\r\n", SrcBuf);
-		printf("Echoing now...\r\n");
+		// printf("Recv from %s:%d\r\n", client_addr.sin_addr.s_addr, client_addr.sin_port);
+		// printf("Msg: #%s#\r\n", SrcBuf);
+		// printf("Echoing now...\r\n");
 		sprintf(DstBuf, "Echo: %s", SrcBuf);
 		trans_len = strlen(DstBuf);
 		trans_len = BC_Send(client_socket, DstBuf, trans_len, 0);
-		// WifiRecvFlag &= ~WIFI_MSG_FLAG_GENERAL_OK;
 		if(trans_len < 0) {
 			printf("Server Send Failed:%d\r\n", trans_len);
 			BC_Close(client_socket);
 			continue;
 		}
-		vTaskDelay(1000/portTICK_RATE_MS);
+		// vTaskDelay(1000/portTICK_RATE_MS);
 		ret = BC_Close(client_socket);
-		printf("BC_Close:%d\r\n", ret);
+		// printf("BC_Close:%d\r\n", ret);
 	}
 
-	// BC_Close(server_socket);
-	// vTaskDelay(500);
-	// WifiRecvFlag &= ~WIFI_MSG_FLAG_GOT_CLOSED;
-	// vTaskDelete(NULL);
-	// return;
+	return;
 }
 
 sint32_t TaskAppAgentInit(void)
 {
 	return BC_OK;
 }
-// volatile void IrqUsartWifi( void )
-// {
-// }
-// 

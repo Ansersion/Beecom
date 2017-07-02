@@ -66,7 +66,7 @@ void TaskWifiAgent(void *pvParameters)
 		// // BC_MsgSetMsg(&qe, UsartTermBuf, strlen(UsartTermBuf));
 		// BC_MsgSetMsg(&qe, msg, strlen((const char *)msg));
 		ret = ProcWifiMsg(&qe, wifi_msg);
-		printf("wifi task: ret=%d\r\n", ret);
+		// printf("wifi task: ret=%d\r\n", ret);
 		if(BC_MOD_IRQ != qe.u8SrcID) {
 			continue;
 		}
@@ -116,7 +116,7 @@ sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg)
 			return -11;
 		}
 		msg_unit = (stWifiMsgUnit *)(qe->pText);
-		printf("WifiRecvFlag: %x\r\n", WifiRecvFlag);
+		// printf("WifiRecvFlag: %x\r\n", WifiRecvFlag);
 		switch(msg_unit->WifiClbkCmd) {
 			case WIFI_CLBK_CMD_RESET:
 				ret = BC_WifiReset(NULL);
@@ -140,11 +140,9 @@ sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg)
 				ret = BC_WifiQuerySt(NULL);
 				break;
 			case WIFI_CLBK_CMD_CLOSE_SOCK:
-				printf("BC_CLOSE\r\n");
 				ret = BC_WifiCloseSock(msg_unit->ClbkPara.ClsSockPara.sockfd, NULL);
 				break;
 			case WIFI_CLBK_CMD_SEND:
-				printf("BC_WifiSend\r\n");
 				ret = BC_WifiSend(msg_unit->ClbkPara.SendPara.sockfd, msg_unit->ClbkPara.SendPara.msg, msg_unit->ClbkPara.SendPara.size, NULL);
 				break;
 			default:
@@ -153,7 +151,7 @@ sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg)
 	} else {
 		// msg from irq
 	}
-	printf("wifi cmd: ret=%d, %d\r\n%s\r\n", ret, msg_unit->WifiClbkCmd, wifi_msg);
+	// printf("wifi cmd: ret=%d, %d\r\n%s\r\n", ret, msg_unit->WifiClbkCmd, wifi_msg);
 	return ret;
 }
 
@@ -162,7 +160,3 @@ sint32_t BC_Atoi(char n)
 		return n - '0';
 }
 
-// volatile void IrqUsartWifi( void )
-// {
-// }
-// 

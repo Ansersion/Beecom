@@ -15,6 +15,7 @@ enum BC_ModID {
 	BC_MOD_TERMINAL, 
 	// indicate the queue msg from IRQ
 	BC_MOD_IRQ,
+	BC_MOD_ANONYMITY,
 	// invalid mod, to define the limit
 	BC_MOD_INVALID,
 };

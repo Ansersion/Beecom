@@ -146,27 +146,6 @@ void TaskTerminal(void * pvParameters)
 	}
 }
 
-// sint32_t CheckEndFlag(uint8_t * msg, uint32_t msg_size, uint8_t * flag, uint32_t flag_size)
-// {
-// 
-// 	static sint32_t i = 0;
-// 	if(msg_size < flag_size) {
-// 		return BC_ERR;
-// 	}
-// 	if(!msg) {
-// 		return BC_ERR;
-// 	}
-// 	if(!flag) {
-// 		return BC_ERR;
-// 	}
-// 	for(i = 0; i < flag_size; i++) {
-// 		if(msg[msg_size - flag_size + i] != flag[i]) {
-// 			return BC_ERR;
-// 		}
-// 	}
-// 	return BC_OK;
-// }
-
 sint32_t uputs(USART_TypeDef * usart, sint8_t * str)
 {
 	if(!usart || !str) {
