@@ -36,7 +36,7 @@ extern TaskHandle_t DataHubHandle;
 
 #define LED_GREEN_TURN() (GPIOD->ODR ^= 1<<2) // green
 
-#define BC_MOD_MYSELF BC_MOD_WIFI
+static const BC_ModID MOD_MYSELF = BC_MOD_WIFI;
 
 // static uint8_t UsartWifiBuf[USART_WIFI_BUF_SIZE];
 // static QueueHandle_t UsartMsgQueue;
@@ -48,7 +48,7 @@ void TaskWifiAgent(void *pvParameters)
 {
 	static BC_QueueElement qe;
 	static uint8_t * wifi_msg = UsartWifiBuf;
-	static sint32_t ret = BC_OK;
+	static sint32_t ret = BC_ERR;
 
 	ret = TaskWifiAgentInit();
 	if(ret != BC_OK) {
@@ -57,25 +57,28 @@ void TaskWifiAgent(void *pvParameters)
 		BC_Panic(WifiPanicMsg);
 	}
 
-	while(1) {
-		while(BC_Dequeue(BC_ModOutQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
+	while(BC_TRUE) {
+		/* Initialize variables */
+
+		/* Wait message */
+		while(BC_Dequeue(BC_ModOutQueue[MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
 			// Indicate led
 			LED_GREEN_TURN();
 		}
-		// BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_DEFAULT);
-		// // BC_MsgSetMsg(&qe, UsartTermBuf, strlen(UsartTermBuf));
-		// BC_MsgSetMsg(&qe, msg, strlen((const char *)msg));
+
+		/* Handle message */
 		ret = ProcWifiMsg(&qe, wifi_msg);
 		// printf("wifi task: ret=%d\r\n", ret);
-		if(BC_MOD_IRQ != qe.u8SrcID) {
-			continue;
-		}
-		while(BC_Enqueue(BC_ModInQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
+
+		/* Module-custom process: START */
+		// if(BC_MOD_IRQ != qe.u8SrcID) {
+		// 	continue;
+		// }
+		/* Module-custom process: END */
+
+		while(BC_Enqueue(BC_ModInQueue[MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
 		}
 		vTaskResume(DataHubHandle);
-		// if(BC_Dequeue(BC_ModOutQueue[BC_MOD_MYSELF], &qe, 0) == BC_TRUE) {
-		// 	// process 
-		// }
 	}
 }
 
@@ -148,6 +151,10 @@ sint32_t ProcWifiMsg(BC_QueueElement * qe, uint8_t * wifi_msg)
 			default:
 				break;
 		}
+		BC_MsgDropedInit(qe, MOD_MYSELF);
+		// BC_MsgInit(&qe, BC_MOD_ANONYMITY, BC_MOD_ANONYMITY);
+		// BC_MsgSetMsg(&qe, UsartTermBuf, strlen(UsartTermBuf));
+		// BC_MsgSetMsg(&qe, msg, strlen((const char *)msg));
 	} else {
 		// msg from irq
 	}

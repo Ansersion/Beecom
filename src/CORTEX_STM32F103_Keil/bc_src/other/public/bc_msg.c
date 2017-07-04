@@ -57,3 +57,16 @@ sint32_t BC_MsgSetMsg(BC_QueueElement * qe, uint8_t * msg, uint16_t msg_size)
 	memcpy(qe->pText, msg, msg_size);
 	return BC_OK;
 }
+
+sint32_t BC_MsgDropedInit(BC_QueueElement * qe, uint8_t src_mod)
+{
+	if(!qe) {
+		return BC_ERR;
+	}
+	qe->u16MsgLen = 0;
+	qe->u8SrcID = src_mod;
+	qe->u8DstID = BC_MOD_ANONYMITY;
+
+	return BC_OK;
+}
+

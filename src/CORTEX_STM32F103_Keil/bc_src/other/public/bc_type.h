@@ -4,7 +4,7 @@
 #include <beecomint.h>
 #include <bc.h>
 
-enum BC_ModID {
+typedef enum BC_ModID {
 	BC_MOD_DEFAULT=0,
 	BC_MOD_DATAHUB,
 	BC_MOD_WIFI,
@@ -13,12 +13,15 @@ enum BC_ModID {
 	BC_MOD_BLUETOOTH,
 	BC_MOD_NET_SERVER,
 	BC_MOD_TERMINAL, 
-	// indicate the queue msg from IRQ
+	/* indicate the queue msg from IRQ */
 	BC_MOD_IRQ,
+	/* BC_MOD_ANONYMITY:
+	   1. as source ID: means not to response 
+	   2. as destionation ID: means the message would be droped*/
 	BC_MOD_ANONYMITY,
-	// invalid mod, to define the limit
+	/* invalid mod, to define the limit */
 	BC_MOD_INVALID,
-};
+}BC_ModID;
 
 typedef struct BC_QueueElement {
 	uint8_t 	u8SrcID;

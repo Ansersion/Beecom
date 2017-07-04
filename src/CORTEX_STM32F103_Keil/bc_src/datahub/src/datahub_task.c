@@ -36,7 +36,8 @@ BC_MsgDirMap ModMsgMap[] = {
 	// {BC_MOD_DATAHUB, 	0, 					0, 		0, 		NULL},
 	{BC_MOD_PHONE_APP, 	BC_MOD_ZIGBEE, 		BC_MOD_INVALID, 		BC_MOD_INVALID, 		NULL},
 	{BC_MOD_ZIGBEE, 	BC_MOD_PHONE_APP, 	BC_MOD_INVALID, 		BC_MOD_INVALID, 		NULL},
-	{BC_MOD_BLUETOOTH, 	BC_MOD_PHONE_APP, 	BC_MOD_INVALID, 		BC_MOD_INVALID, 		NULL},
+	// {BC_MOD_BLUETOOTH, 	BC_MOD_PHONE_APP, 	BC_MOD_INVALID, 		BC_MOD_INVALID, 		NULL},
+	{BC_MOD_WIFI, 		BC_MOD_INVALID, 	BC_MOD_INVALID, 		BC_MOD_INVALID, 		NULL},
 	{BC_MOD_NET_SERVER, BC_MOD_PHONE_APP, 	BC_MOD_INVALID, 		BC_MOD_INVALID, 		NULL},
 	{BC_MOD_TERMINAL, 	BC_MOD_INVALID, 	BC_MOD_INVALID, 		BC_MOD_INVALID, 		NULL}, 
 	// {BC_MOD_INVALID, 	0, 					0, 		0, 		NULL},
@@ -51,17 +52,23 @@ void TaskDataHub(void *pvParameters)
 	// static uint32_t mod_id;
 	static uint8_t src_id = BC_MOD_INVALID;
 	static BC_QueueElement queue_element;
-
 	static DataHubInit_Type init_type;
 
-	if(TaskDataHubInit(&init_type) != 0) {
+	static sint32_t ret = BC_ERR;
+
+	ret = TaskDataHubInit(&init_type);
+	if(ret != BC_OK) {
+		/* Never return */
 		BC_Panic("Datahub init");
 	}
 
 	while(BC_TRUE) {
+		/* Initialize variables */
 		// printf("DataHub\r\n");
 		memset(&queue_element, 0, sizeof(queue_element));
 		printf("datahub: start\r\n");
+
+		/* Relay modules' messages */
 		for(i = 0; i < ModMsgMapSize; i++) {
 			src_id = ModMsgMap[i].u8SrcID;
 			if(!BC_ASSERT_MOD_ID_VALID(src_id)) {
@@ -73,7 +80,11 @@ void TaskDataHub(void *pvParameters)
 				printf("bc_transmit ret=%d\r\n", BC_Transmit2Mod(&queue_element, &ModMsgMap[i]));
 			}
 		}
+		
+		/* Process message for self */
 		ProcQueueElm();
+
+		/* Suspend self */
 		vTaskSuspend(NULL);
 
 	}
@@ -96,10 +107,11 @@ static sint32_t BC_Transmit2Mod(BC_QueueElement * que_elm, BC_MsgDirMap * msg_di
 	if(!BC_ASSERT_MOD_ID_VALID(que_elm->u8DstID)) {
 		return -2;
 	}
-	// if(que_elm->u8DstID == que_elm->u8SrcID) {
-	// 	printf("To self: %d\r\n", que_elm->u8DstID);
-	// 	return 0;
-	// }
+	if(BC_MOD_ANONYMITY == que_elm->u8DstID) {
+		/* droped */
+		return 0;
+	}
+
 	if(que_elm->u8DstID != BC_MOD_DEFAULT) {
 		// if the queue is full
 		// the data will be dropped

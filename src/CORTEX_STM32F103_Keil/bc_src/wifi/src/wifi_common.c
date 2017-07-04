@@ -707,7 +707,7 @@ sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 
 	while(1) {
 		if(pdFALSE == xQueueReceive(SockServ->queue_handle, &sock_data_tmp, 5000/portTICK_RATE_MS)) {
-			printf("addr4: %s\r\n", INADDR_ANY);
+			printf("addr6: %s\r\n", INADDR_ANY);
 			continue;
 		}
 		if(!(sock_data[sock_data_tmp.wifi_id].wifi_recv_flag & WIFI_MSG_FLAG_GOT_CONNECT)) {
