@@ -110,7 +110,7 @@ typedef struct stWifiMsgUnit {
 	unWifiClbkPara ClbkPara;
 }stWifiMsgUnit;
 
-// sint32_t CheckWifiMsgUnit(void);
+sint32_t CheckWifiMsgUnit(void);
 
 #endif
 

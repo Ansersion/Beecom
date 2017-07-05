@@ -18,5 +18,8 @@ sint32_t BC_MsgSetMsg(BC_QueueElement * qe, uint8_t * msg, uint16_t msg_size);
 
 sint32_t BC_MsgDropedInit(BC_QueueElement * qe, uint8_t src_mod);
 
+sint32_t CheckMsgUnit(uint32_t type_size);
+
+
 #endif
 

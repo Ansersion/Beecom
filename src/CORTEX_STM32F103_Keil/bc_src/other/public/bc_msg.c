@@ -70,3 +70,8 @@ sint32_t BC_MsgDropedInit(BC_QueueElement * qe, uint8_t src_mod)
 	return BC_OK;
 }
 
+sint32_t CheckMsgUnit(uint32_t type_size)
+{
+	return (type_size > BC_CONFIG_QUEUE_ELEMENT_BUF_SIZE ? BC_ERR : BC_OK);
+}
+

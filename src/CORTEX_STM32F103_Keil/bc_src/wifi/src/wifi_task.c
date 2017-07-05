@@ -95,7 +95,7 @@ sint32_t TaskWifiAgentInit(void)
 	if(SocketInit() != BC_OK) {
 		return -2;
 	}
-	if(CheckWifiMsgUnit() != BC_OK) {
+	if(CheckMsgUnit(sizeof(stWifiMsgUnit)) != BC_OK) {
 		return -3;
 	}
 	return BC_OK;
