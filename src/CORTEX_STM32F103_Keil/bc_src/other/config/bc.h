@@ -18,6 +18,11 @@
 #define BC_CONFIG_PRIORITY_COMMON_TASK 	(BC_CONFIG_BASE_PRIORITY + 2)
 
 /*************************************************
+ The priority of tasks except "TaskDataHub"
+***************************************************/
+#define BC_CONFIG_PRIORITY_DEBUG_TASK 	(BC_CONFIG_PRIORITY_COMMON_TASK + 1)
+
+/*************************************************
  The priority of "TaskDataHub" is higher than
  the comman tasks for high speed of transmitting
  inner messages.

@@ -21,6 +21,8 @@
 #include <bc_queue.h>
 #include <panic.h>
 
+static const BC_ModID MOD_MYSELF = BC_MOD_DATAHUB;
+
 
 // typedef struct BC_MsgDirMap {
 // 	uint8_t 		u8SrcID;
@@ -66,18 +68,19 @@ void TaskDataHub(void *pvParameters)
 		/* Initialize variables */
 		// printf("DataHub\r\n");
 		memset(&queue_element, 0, sizeof(queue_element));
-		printf("datahub: start\r\n");
+		// printf("datahub: start\r\n");
+		BC_Printf(MOD_MYSELF, "datahub: start");
 
 		/* Relay modules' messages */
 		for(i = 0; i < ModMsgMapSize; i++) {
 			src_id = ModMsgMap[i].u8SrcID;
 			if(!BC_ASSERT_MOD_ID_VALID(src_id)) {
-				printf("DEBUG: DataHub\r\n");
+				BC_Printf(MOD_MYSELF, "DEBUG: DataHub");
 				continue;
 			}
 			if(BC_Dequeue(BC_ModInQueue[src_id], &queue_element, 0) == BC_TRUE) {
-				printf("datahub: get queue: %d->%d\r\n", queue_element.u8SrcID, queue_element.u8DstID);
-				printf("bc_transmit ret=%d\r\n", BC_Transmit2Mod(&queue_element, &ModMsgMap[i]));
+				BC_Printf(MOD_MYSELF, "datahub: get queue: M%d->M%d", queue_element.u8SrcID, queue_element.u8DstID);
+				BC_Printf(MOD_MYSELF, "bc_transmit ret=%d", BC_Transmit2Mod(&queue_element, &ModMsgMap[i]));
 			}
 		}
 		

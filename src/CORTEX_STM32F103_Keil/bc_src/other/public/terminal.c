@@ -15,6 +15,7 @@
 
 // STD headers
 #include <string.h>
+#include <stdarg.h>
 
 // FreeRTOS headers
 #include <FreeRTOS.h>
@@ -34,10 +35,12 @@
 
 extern TaskHandle_t DataHubHandle;
 
+static sint8_t BCPrinfBuf[256];
+
 #define LED_RED_TURN() (GPIOA->ODR ^= 1<<8) // red
 #define LED_GREEN_TURN() (GPIOD->ODR ^= 1<<2) // green
 
-#define BC_MOD_MYSELF BC_MOD_TERMINAL
+static const BC_ModID MOD_MYSELF = BC_MOD_TERMINAL;
 
 static uint8_t UsartTermBuf[USART_TERMINAL_BUF_SIZE];
 static uint8_t EndFlag[] = "\r\n";
@@ -106,7 +109,7 @@ void TaskTerminal(void * pvParameters)
 			LED_RED_TURN();
 		}
 		// process
-		BC_MsgInit(&qe, BC_MOD_MYSELF, BC_MOD_WIFI);
+		BC_MsgInit(&qe, MOD_MYSELF, BC_MOD_WIFI);
 		switch(msg[0]) {
 			case 'R':
 				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_RESET;
@@ -137,10 +140,10 @@ void TaskTerminal(void * pvParameters)
 				break;
 		}
 		BC_MsgSetMsg(&qe, (uint8_t *)&testWifiMsgUnit, sizeof(testWifiMsgUnit));
-		while(BC_Enqueue(BC_ModInQueue[BC_MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
+		while(BC_Enqueue(BC_ModInQueue[MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
 		}
 		vTaskResume(DataHubHandle);
-		if(BC_Dequeue(BC_ModOutQueue[BC_MOD_MYSELF], &qe, 0) == BC_TRUE) {
+		if(BC_Dequeue(BC_ModOutQueue[MOD_MYSELF], &qe, 0) == BC_TRUE) {
 			// process 
 		}
 	}
@@ -202,3 +205,18 @@ int fputc(int ch, FILE *f)
 }
 
 #endif
+
+sint32_t _BC_Printf(const sint8_t * file_name, uint32_t line, uint32_t mod_id, const sint8_t * fmt, ...)
+{
+	va_list ap;
+	sint32_t tmp;
+	va_start(ap, fmt);
+	memset(BCPrinfBuf, 0, sizeof(BCPrinfBuf));
+	snprintf(BCPrinfBuf, sizeof(BCPrinfBuf), "M%-2d %s[%d]:", mod_id, file_name, line);
+	tmp = strlen(BCPrinfBuf);
+	tmp = vsnprintf(BCPrinfBuf+tmp, sizeof(BCPrinfBuf)-tmp, fmt, ap);
+	printf("%s\r\n", BCPrinfBuf);
+	va_end(ap);
+	return tmp;
+}
+

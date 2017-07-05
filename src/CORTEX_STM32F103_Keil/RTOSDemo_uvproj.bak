@@ -361,7 +361,7 @@
               <MiscControls></MiscControls>
               <Define>RVDS_ARMCM3_LM3S102</Define>
               <Undefine></Undefine>
-              <IncludePath>..\CORTEX_STM32F103_Keil;.\STM32F10xFWLib\inc;.\bc_src\main\inc;.\bc_src\bluetooth\inc;.\bc_src\datahub\inc;.\bc_src\net_server\inc;.\bc_src\phone_app\inc;.\bc_src\other\irq;.\bc_src\other\public;.\bc_src\other\config;.\bc_src\freertos_src\include;.\bc_src\freertos_src\portable\RVDS\ARM_CM3;.\bc_src\zigbee\inc</IncludePath>
+              <IncludePath>..\CORTEX_STM32F103_Keil;.\STM32F10xFWLib\inc;.\bc_src\main\inc;.\bc_src\bluetooth\inc;.\bc_src\datahub\inc;.\bc_src\net_server\inc;.\bc_src\phone_app\inc;.\bc_src\other\irq;.\bc_src\other\public;.\bc_src\other\config;.\bc_src\freertos_src\include;.\bc_src\freertos_src\portable\RVDS\ARM_CM3;.\bc_src\zigbee\inc;.\bc_src\wifi\inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -535,11 +535,6 @@
               <FilePath>.\bc_src\phone_app\src\app_agent_common.c</FilePath>
             </File>
             <File>
-              <FileName>app_agent_irq.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\bc_src\phone_app\src\app_agent_irq.c</FilePath>
-            </File>
-            <File>
               <FileName>app_agent_task.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\bc_src\phone_app\src\app_agent_task.c</FilePath>
@@ -593,6 +588,31 @@
               <FileName>heap_2.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\bc_src\freertos_src\portable\MemMang\heap_2.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>wifi</GroupName>
+          <Files>
+            <File>
+              <FileName>wifi_common.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\wifi\src\wifi_common.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifi_irq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\wifi\src\wifi_irq.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifi_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\wifi\src\wifi_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>wifi_clbk.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bc_src\wifi\src\wifi_clbk.c</FilePath>
             </File>
           </Files>
         </Group>
