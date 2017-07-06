@@ -11,7 +11,14 @@
 #define USART_TERMINAL 	USART1
 #define USART_TERMINAL_BUF_SIZE 	128
 
-#define BC_Printf(mod_id, fmt, ...) (_BC_Printf(__FILE__, __LINE__, mod_id, fmt, ##__VA_ARGS__))
+
+#ifdef __MODULE__
+#define __BC_FILE__ __MODULE__
+#else
+#define __BC_FILE__ __FILE__
+#endif
+
+#define BC_Printf(mod_id, fmt, ...) (_BC_Printf(__BC_FILE__, __LINE__, mod_id, fmt, ##__VA_ARGS__))
 
 void _sys_exit(int x);
 int fputc(int ch, FILE *f);
@@ -25,7 +32,7 @@ sint32_t TaskTerminalInit(void);
 sint32_t uputs(USART_TypeDef * usart, sint8_t * str);
 sint32_t uputn(USART_TypeDef * usart, sint8_t * str, uint32_t size);
 
-sint32_t _BC_LogPrint(const sint8_t * file_name, uint32_t line, uint32_t mod_id, const sint8_t * fmt, ...);
+sint32_t _BC_Printf(const sint8_t * file_name, uint32_t line, uint32_t mod_id, const sint8_t * fmt, ...);
 
 
 #endif

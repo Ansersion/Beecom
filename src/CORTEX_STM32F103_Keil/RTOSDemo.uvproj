@@ -609,11 +609,6 @@
               <FileType>1</FileType>
               <FilePath>.\bc_src\wifi\src\wifi_task.c</FilePath>
             </File>
-            <File>
-              <FileName>wifi_clbk.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\bc_src\wifi\src\wifi_clbk.c</FilePath>
-            </File>
           </Files>
         </Group>
       </Groups>

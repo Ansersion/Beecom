@@ -1,3 +1,3 @@
 2017.07.07:
 - First add ChangeLog.txt
-
+- Use __MODULE__ instead of __FILE__ to simplify the ouput of BC_Printf()
