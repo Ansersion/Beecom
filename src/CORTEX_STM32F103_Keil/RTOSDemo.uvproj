@@ -359,7 +359,7 @@
             <useXO>0</useXO>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>RVDS_ARMCM3_LM3S102</Define>
+              <Define>RVDS_ARMCM3_LM3S102 BC_DEBUG</Define>
               <Undefine></Undefine>
               <IncludePath>..\CORTEX_STM32F103_Keil;.\STM32F10xFWLib\inc;.\bc_src\main\inc;.\bc_src\bluetooth\inc;.\bc_src\datahub\inc;.\bc_src\net_server\inc;.\bc_src\phone_app\inc;.\bc_src\other\irq;.\bc_src\other\public;.\bc_src\other\config;.\bc_src\freertos_src\include;.\bc_src\freertos_src\portable\RVDS\ARM_CM3;.\bc_src\zigbee\inc;.\bc_src\wifi\inc</IncludePath>
             </VariousControls>

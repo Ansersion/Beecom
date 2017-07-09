@@ -47,7 +47,6 @@ static uint8_t EndFlag[] = "\r\n";
 static uint32_t FlagSize = sizeof(EndFlag) - 1;
 // static BC_QueueElement QueEle;
 // static BC_QueueElement QueEleForIrq;
-static uint32_t GotMsgFlag = BC_FALSE;
 static QueueHandle_t UsartMsgQueue;
 static uint8_t WifiSsidBuf[64];
 static uint8_t WifiPwdBuf[64];
@@ -60,7 +59,6 @@ sint32_t TaskTerminalInit(void)
 	strcpy(WifiSsidBuf, "404-hb2g");
 	memset(WifiPwdBuf, 0, sizeof(WifiPwdBuf));
 	strcpy(WifiPwdBuf, "68704824");
-	GotMsgFlag = BC_FALSE;
 	UsartMsgQueue = xQueueCreate(1, sizeof(uint32_t));
 	if(!UsartMsgQueue) {
 		return BC_ERR;
@@ -72,7 +70,7 @@ volatile void IrqUsartTerminal(void)
 {
 	static uint32_t Index = 0;
 	static uint16_t RxData=0;
-	BaseType_t xHigherPriorityTaskWoken;
+	static BC_QueueElement qe;
 
 	if(USART_GetITStatus(USART_TERMINAL, USART_IT_RXNE) == RESET) {
 		return;
@@ -86,7 +84,9 @@ volatile void IrqUsartTerminal(void)
 		return;
 	}
 	if(BC_OK == CheckDataFlag(UsartTermBuf, Index, EndFlag, FlagSize, BC_TRUE)) {
-		xQueueSendFromISR(UsartMsgQueue, &GotMsgFlag, &xHigherPriorityTaskWoken);
+		BC_MsgInit(&qe, BC_MOD_IRQ, MOD_MYSELF);
+		BC_MsgSetMsg(&qe, UsartTermBuf, Index);
+		xQueueSendFromISR(BC_ModOutQueue[MOD_MYSELF], &qe, NULL);
 		UsartTermBuf[Index] = '\0';
 		Index = 0;
 	}
@@ -96,6 +96,7 @@ void TaskTerminal(void * pvParameters)
 {
 	static BC_QueueElement qe;
 	static uint8_t * msg = UsartTermBuf;
+	static sint32_t ret = BC_ERR;
 
 	stWifiMsgUnit testWifiMsgUnit;
 
@@ -104,48 +105,15 @@ void TaskTerminal(void * pvParameters)
 	}
 
 	while(1) {
-		while(BC_FALSE == xQueueReceive(UsartMsgQueue, &GotMsgFlag, TIMEOUT_COMMON)) {
-			// Indicate led
-			LED_RED_TURN();
+		while(BC_FALSE == BC_Dequeue(BC_ModOutQueue[MOD_MYSELF], &qe, TIMEOUT_COMMON)) {
+		 	LED_RED_TURN();
 		}
-		// process
-		BC_MsgInit(&qe, MOD_MYSELF, BC_MOD_WIFI);
-		switch(msg[0]) {
-			case 'R':
-				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_RESET;
-				break;
-			case 'M':
-				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_MODE;
-				testWifiMsgUnit.ClbkPara.SetModePara.Mode = WIFI_MODE_STA;
-				break;
-			case 'U':
-				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_MUX;
-				testWifiMsgUnit.ClbkPara.SetMuxPara.Mux = WIFI_MUX_OPEN;
-				break;
-			case 'I':
-				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_QRY_SR;
-				break;
-			case 'S':
-				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_SERV;
-				testWifiMsgUnit.ClbkPara.ServPara.ServMode = WIFI_SERVER_OPEN;
-				testWifiMsgUnit.ClbkPara.ServPara.Port = BC_CENTER_SERV_PORT;
-				break;
-			case 'N':
-				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_NET;
-				testWifiMsgUnit.ClbkPara.SetNetPara.Ssid = WifiSsidBuf;
-				testWifiMsgUnit.ClbkPara.SetNetPara.Pwd = WifiPwdBuf;
-				break;
-			default:
-				continue;
-				break;
-		}
-		BC_MsgSetMsg(&qe, (uint8_t *)&testWifiMsgUnit, sizeof(testWifiMsgUnit));
+
+		ret = ProcTermMsg(&qe);
+
 		while(BC_Enqueue(BC_ModInQueue[MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
 		}
 		vTaskResume(DataHubHandle);
-		if(BC_Dequeue(BC_ModOutQueue[MOD_MYSELF], &qe, 0) == BC_TRUE) {
-			// process 
-		}
 	}
 }
 
@@ -218,5 +186,56 @@ sint32_t _BC_Printf(const sint8_t * file_name, uint32_t line, uint32_t mod_id, c
 	printf("%s\r\n", BCPrinfBuf);
 	va_end(ap);
 	return tmp;
+}
+
+sint32_t ProcTermMsg(BC_QueueElement * p_qe)
+{
+	sint32_t ret = BC_OK;
+	stWifiMsgUnit testWifiMsgUnit;
+
+
+	if(!p_qe) {
+		return -1;
+	}
+
+
+	if(BC_MOD_IRQ != p_qe->u8SrcID) {
+		BC_MsgDropedInit(p_qe, MOD_MYSELF);
+		// BC_MsgDropedInit(p_qe, MOD_MYSELF);
+	} else {
+		switch(p_qe->pText[0]) {
+			case 'R':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_RESET;
+				break;
+			case 'M':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_MODE;
+				testWifiMsgUnit.ClbkPara.SetModePara.Mode = WIFI_MODE_STA;
+				break;
+			case 'U':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_MUX;
+				testWifiMsgUnit.ClbkPara.SetMuxPara.Mux = WIFI_MUX_OPEN;
+				break;
+			case 'I':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_QRY_SR;
+				break;
+			case 'S':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_SERV;
+				testWifiMsgUnit.ClbkPara.ServPara.ServMode = WIFI_SERVER_OPEN;
+				testWifiMsgUnit.ClbkPara.ServPara.Port = BC_CENTER_SERV_PORT;
+				break;
+			case 'N':
+				testWifiMsgUnit.WifiClbkCmd = WIFI_CLBK_CMD_SET_NET;
+				testWifiMsgUnit.ClbkPara.SetNetPara.Ssid = WifiSsidBuf;
+				testWifiMsgUnit.ClbkPara.SetNetPara.Pwd = WifiPwdBuf;
+				break;
+			default:
+				BC_MsgDropedInit(p_qe, MOD_MYSELF);
+				return -2;
+				break;
+		}
+		BC_MsgInit(p_qe, MOD_MYSELF, BC_MOD_WIFI);
+		BC_MsgSetMsg(p_qe, (uint8_t *)&testWifiMsgUnit, sizeof(testWifiMsgUnit));
+	}
+	return ret;
 }
 

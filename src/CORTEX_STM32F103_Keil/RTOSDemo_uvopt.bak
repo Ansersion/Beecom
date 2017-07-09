@@ -329,7 +329,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>135</TopLine>
+      <TopLine>136</TopLine>
       <CurrentLine>138</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\STM32F10xFWLib\src\stm32f10x_rcc.c</PathWithFileName>
@@ -401,7 +401,7 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>155</TopLine>
+      <TopLine>156</TopLine>
       <CurrentLine>157</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\bc_src\main\src\main.c</PathWithFileName>
