@@ -1,3 +1,7 @@
 2017.07.07:
 - First add ChangeLog.txt
 - Use __MODULE__ instead of __FILE__ to simplify the ouput of BC_Printf()
+
+2017.07.09:
+- Add macro BC_DEBUG for BC_Printf
+- Simplify the function "TaskTerminal()"
