@@ -5,3 +5,8 @@
 2017.07.09:
 - Add macro BC_DEBUG for BC_Printf
 - Simplify the function "TaskTerminal()"
+
+2017.07.14:
+- Initialize heap in main()
+- Modify _BC_Printf(BC_Printf) to be compatible with tasks with priority of "BC_CONFIG_PRIORITY_COMMON_TASK"
+- TaskTerminal: Add command "TERM_CLBK_CMD_PRINTF"

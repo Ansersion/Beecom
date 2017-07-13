@@ -13,104 +13,35 @@
 //   limitations under the License.
 //
 
-#ifndef WIFI_CLBK_H
-#define WIFI_CLBK_H
+#ifndef TERMINAL_CLBK_H
+#define TERMINAL_CLBK_H
 
 // Beecom headers
-#include <wifi_common.h>
 
-typedef enum WIFI_CLBK_CMD_ID {
-	/*For wifi configure*/
-	WIFI_CLBK_CMD_NONE = 0,
-	WIFI_CLBK_CMD_RESET,
-	WIFI_CLBK_CMD_SET_MODE,
-	WIFI_CLBK_CMD_SET_NET,
-	WIFI_CLBK_CMD_SET_MUX,
-	WIFI_CLBK_CMD_SET_SERV,
-	WIFI_CLBK_CMD_QRY_SR,
+#include <beecomint.h>
 
-	/*For connection*/
-	WIFI_CLBK_CMD_QRY_ST,
-	WIFI_CLBK_CMD_CLOSE_SOCK,
-	WIFI_CLBK_CMD_SEND,
-}WIFI_CLBK_CMD_ID;
+typedef enum TERM_CLBK_CMD_ID {
+	/*For terminal configure*/
+	TERM_CLBK_CMD_NONE = 0,
+	TERM_CLBK_CMD_PRINTF,
+}TERM_CLBK_CMD_ID;
 
-/*WIFI_CLBK_CMD_RESET*/
-typedef struct stWifiClbkResetPara {
-	// no use
-	uint32_t NO_USE;
-	// // uint32_t * Timeout;
-}stWifiClbkResetPara;
-
-/*WIFI_CLBK_CMD_SET_MODE*/
-typedef struct stWifiClbkSetModePara {
-	WIFI_MODE Mode;
-	// uint32_t * Timeout;
-}stWifiClbkSetModePara;
-
-/*WIFI_CLBK_CMD_SET_NET*/
-typedef struct stWifiClbkSetNetPara {
-	uint8_t * Ssid;
-	uint8_t * Pwd;
-	// uint32_t * Timeout;
-}stWifiClbkSetNetPara;
-
-/*WIFI_CLBK_CMD_SET_MUX*/
-typedef struct stWifiClbkSetMuxPara {
-	WIFI_MUX Mux;
-	// uint32_t * Timeout;
-}stWifiClbkSetMuxPara;
-
-/*WIFI_CLBK_CMD_SET_SERV*/
-typedef struct stWifiClbkServPara{
-	WIFI_SERVER ServMode;
-	uint16_t Port;
-	// uint32_t * Timeout;
-}stWifiClbkServPara;
-
-/*WIFI_CLBK_CMD_QRY_SR*/
-typedef struct stWifiClbkSrPara{
-	// no use
-	uint32_t NO_USE;
-}stWifiClbkSrPara;
-
-/*WIFI_CLBK_CMD_QRY_ST*/
-typedef struct stWifiClbkStPara{
-	// no use
-	uint32_t NO_USE;
-}stWifiClbkStPara;
-
-/*WIFI_CLBK_CMD_CLOSE_SOCK*/
-typedef struct stWifiClbkClsSockPara{
-	sint32_t sockfd;
-}stWifiClbkClsSockPara;
-
-/*WIFI_CLBK_CMD_SEND*/
-typedef struct stWifiClbkSendPara{
-	sint32_t sockfd;
+/*TERM_CLBK_CMD_PRINTF*/
+typedef struct stTermClbkPrintfPara {
 	uint8_t * msg;
-	uint32_t size;
-}stWifiClbkSendPara;
+}stTermClbkPrintfPara;
 
 /*********************/
-typedef union unWifiClbkPara {
-	stWifiClbkResetPara 	ResetPara;
-	stWifiClbkSetModePara 	SetModePara;
-	stWifiClbkSetNetPara 	SetNetPara;
-	stWifiClbkSetMuxPara 	SetMuxPara;
-	stWifiClbkServPara 		ServPara;
-	stWifiClbkSrPara 		SrPara;
-	stWifiClbkStPara 		StPara;
-	stWifiClbkClsSockPara 	ClsSockPara;
-	stWifiClbkSendPara 		SendPara;
-}unWifiClbkPara;
+typedef union unTermClbkPara {
+	stTermClbkPrintfPara 	PrintfPara;
+}unTermClbkPara;
 
-typedef struct stWifiMsgUnit {
-	WIFI_CLBK_CMD_ID WifiClbkCmd;
-	unWifiClbkPara ClbkPara;
-}stWifiMsgUnit;
+typedef struct stTermMsgUnit {
+	TERM_CLBK_CMD_ID TermClbkCmd;
+	unTermClbkPara ClbkPara;
+}stTermMsgUnit;
 
-sint32_t CheckWifiMsgUnit(void);
+sint32_t CheckTermMsgUnit(void);
 
 #endif
 

@@ -32,13 +32,16 @@
 #include <panic.h>
 #include <utils.h>
 #include <wifi_clbk.h>
+#include <terminal_clbk.h>
 
 extern TaskHandle_t DataHubHandle;
 
-static sint8_t BCPrinfBuf[256];
+#define PRINTF_BUF_SIZE 128
+// static sint8_t BCPrinfBuf[128];
 
 #define LED_RED_TURN() (GPIOA->ODR ^= 1<<8) // red
 #define LED_GREEN_TURN() (GPIOD->ODR ^= 1<<2) // green
+
 
 static const BC_ModID MOD_MYSELF = BC_MOD_TERMINAL;
 
@@ -50,6 +53,7 @@ static uint32_t FlagSize = sizeof(EndFlag) - 1;
 static QueueHandle_t UsartMsgQueue;
 static uint8_t WifiSsidBuf[64];
 static uint8_t WifiPwdBuf[64];
+// static bool_t g_bPrinting = BC_FALSE;
 
 sint32_t TaskTerminalInit(void)
 {
@@ -110,6 +114,12 @@ void TaskTerminal(void * pvParameters)
 		}
 
 		ret = ProcTermMsg(&qe);
+		/* Your control: START */
+		/* Drop by myself*/
+		if(BC_MOD_ANONYMITY == qe.u8DstID) {
+			continue;
+		}
+		/* Your control: END*/
 
 		while(BC_Enqueue(BC_ModInQueue[MOD_MYSELF], &qe, TIMEOUT_COMMON) == BC_FALSE) {
 		}
@@ -177,13 +187,48 @@ int fputc(int ch, FILE *f)
 sint32_t _BC_Printf(const sint8_t * file_name, uint32_t line, uint32_t mod_id, const sint8_t * fmt, ...)
 {
 	va_list ap;
-	sint32_t tmp;
+	sint32_t tmp = 0;
+	uint8_t * pBCPrinfBuf = NULL;
+	// uint8_t BCPrinfBuf[PRINTF_BUF_SIZE];
+	stTermMsgUnit TermMsgUnit;
+	BC_QueueElement qe;
+
 	va_start(ap, fmt);
-	memset(BCPrinfBuf, 0, sizeof(BCPrinfBuf));
-	snprintf(BCPrinfBuf, sizeof(BCPrinfBuf), "M%-2d %s[%d]:", mod_id, file_name, line);
-	tmp = strlen(BCPrinfBuf);
-	tmp = vsnprintf(BCPrinfBuf+tmp, sizeof(BCPrinfBuf)-tmp, fmt, ap);
-	printf("%s\r\n", BCPrinfBuf);
+
+	pBCPrinfBuf = (uint8_t *)pvPortMalloc(PRINTF_BUF_SIZE);
+	if(!pBCPrinfBuf) {
+		va_end(ap);
+		return -1;
+	}
+	tmp = snprintf(pBCPrinfBuf, PRINTF_BUF_SIZE, "M%-2d %s[%d]:", mod_id, file_name, line);
+	if(tmp <= 0) {
+		vPortFree(pBCPrinfBuf);
+		pBCPrinfBuf = NULL;
+		va_end(ap);
+		return -2;
+	}
+	tmp += vsnprintf(pBCPrinfBuf+tmp, PRINTF_BUF_SIZE-tmp, fmt, ap);
+	if(tmp < 0) {
+		vPortFree(pBCPrinfBuf);
+		pBCPrinfBuf = NULL;
+		va_end(ap);
+		return -3;
+	}
+	if(uxTaskPriorityGet(NULL) > BC_CONFIG_PRIORITY_COMMON_TASK ) {
+		printf("%s\r\n", pBCPrinfBuf);
+		vPortFree(pBCPrinfBuf);
+		pBCPrinfBuf = NULL;
+	} else {
+		TermMsgUnit.TermClbkCmd = TERM_CLBK_CMD_PRINTF;
+		TermMsgUnit.ClbkPara.PrintfPara.msg = pBCPrinfBuf;
+		BC_MsgInit(&qe, BC_MOD_ANONYMITY, BC_MOD_TERMINAL);
+		BC_MsgSetMsg(&qe, (uint8_t *)&TermMsgUnit, sizeof(TermMsgUnit));
+		if(BC_FALSE == BC_Enqueue(BC_ModOutQueue[BC_MOD_TERMINAL], &qe, TIMEOUT_COMMON)) {
+			vPortFree(pBCPrinfBuf);
+			pBCPrinfBuf = NULL;
+			return -4;
+		}
+	}
 	va_end(ap);
 	return tmp;
 }
@@ -192,14 +237,22 @@ sint32_t ProcTermMsg(BC_QueueElement * p_qe)
 {
 	sint32_t ret = BC_OK;
 	stWifiMsgUnit testWifiMsgUnit;
-
+	stTermMsgUnit * TermMsgUnit = NULL;
 
 	if(!p_qe) {
 		return -1;
 	}
 
-
 	if(BC_MOD_IRQ != p_qe->u8SrcID) {
+		TermMsgUnit = (stTermMsgUnit *)(p_qe->pText);
+		if(TERM_CLBK_CMD_PRINTF == TermMsgUnit->TermClbkCmd)
+		{
+			if(TermMsgUnit->ClbkPara.PrintfPara.msg) {
+				printf("%s\r\n", TermMsgUnit->ClbkPara.PrintfPara.msg);
+				vPortFree(TermMsgUnit->ClbkPara.PrintfPara.msg);
+				TermMsgUnit->ClbkPara.PrintfPara.msg = NULL;
+			}
+		}
 		BC_MsgDropedInit(p_qe, MOD_MYSELF);
 		// BC_MsgDropedInit(p_qe, MOD_MYSELF);
 	} else {

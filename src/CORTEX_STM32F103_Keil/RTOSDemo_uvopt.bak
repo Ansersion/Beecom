@@ -327,10 +327,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>51</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>136</TopLine>
-      <CurrentLine>138</CurrentLine>
+      <TopLine>146</TopLine>
+      <CurrentLine>162</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\STM32F10xFWLib\src\stm32f10x_rcc.c</PathWithFileName>
       <FilenameWithoutPath>stm32f10x_rcc.c</FilenameWithoutPath>

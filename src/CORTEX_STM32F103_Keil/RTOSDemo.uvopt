@@ -177,38 +177,6 @@
           <ExecCommand></ExecCommand>
           <Expression></Expression>
         </Bp>
-        <Bp>
-          <Number>1</Number>
-          <Type>0</Type>
-          <LineNumber>157</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>134221534</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>D:\beecom\src\CORTEX_STM32F103_Keil\bc_src\main\src\main.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression></Expression>
-        </Bp>
-        <Bp>
-          <Number>2</Number>
-          <Type>0</Type>
-          <LineNumber>11</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>134224352</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>D:\beecom\src\CORTEX_STM32F103_Keil\bc_src\net_server\src\server_agent_task.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression>\\bc_center\bc_src/net_server/src/server_agent_task.c\11</Expression>
-        </Bp>
       </Breakpoint>
       <MemoryWindow1>
         <Mm>
@@ -327,10 +295,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>51</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>146</TopLine>
-      <CurrentLine>162</CurrentLine>
+      <TopLine>137</TopLine>
+      <CurrentLine>138</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\STM32F10xFWLib\src\stm32f10x_rcc.c</PathWithFileName>
       <FilenameWithoutPath>stm32f10x_rcc.c</FilenameWithoutPath>
@@ -401,8 +369,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>156</TopLine>
-      <CurrentLine>157</CurrentLine>
+      <TopLine>136</TopLine>
+      <CurrentLine>136</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\bc_src\main\src\main.c</PathWithFileName>
       <FilenameWithoutPath>main.c</FilenameWithoutPath>
@@ -423,10 +391,10 @@
       <FileType>2</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>0</ColumnNumber>
+      <ColumnNumber>56</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>127</TopLine>
-      <CurrentLine>128</CurrentLine>
+      <TopLine>120</TopLine>
+      <CurrentLine>136</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\bc_src\other\irq\STM32F10x.s</PathWithFileName>
       <FilenameWithoutPath>STM32F10x.s</FilenameWithoutPath>
@@ -663,10 +631,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>3</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
       <TopLine>1</TopLine>
-      <CurrentLine>13</CurrentLine>
+      <CurrentLine>11</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\bc_src\net_server\src\server_agent_task.c</PathWithFileName>
       <FilenameWithoutPath>server_agent_task.c</FilenameWithoutPath>
@@ -745,8 +713,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>0</TopLine>
-      <CurrentLine>0</CurrentLine>
+      <TopLine>3166</TopLine>
+      <CurrentLine>3166</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\bc_src\freertos_src\tasks.c</PathWithFileName>
       <FilenameWithoutPath>tasks.c</FilenameWithoutPath>

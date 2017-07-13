@@ -134,6 +134,7 @@ int main( void )
 	int i,j;
 	/* configure hareware */
 	prvSetupHardware();
+	vPortInitialiseBlocks();
 
 	/* beecom system initialization */
 	BC_Init();
