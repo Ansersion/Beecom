@@ -68,7 +68,7 @@ volatile void IrqUsartWifi(void)
 	static sint32_t s8Ret;
 	static BC_SocketData * SockServ = NULL;
 
-	SockServ = GetSockData(SOCK_SERV_FD);
+	SockServ = GetSockDataIrq(SOCK_SERV_FD);
 	if(!SockServ) {
 		WifiRecvFlag |= WIFI_MSG_FLAG_INVALID_SOCK_SERV;
 		return;
@@ -142,6 +142,8 @@ volatile void IrqUsartWifi(void)
 		if(ParseCIFSR(UsartWifiBuf+WIFI_FLAG_SR_ST_SIZE, Index-WIFI_FLAG_SR_ST_SIZE, INADDR_ANY, 16) == 0) {
 			if(pdTRUE != xQueueSendFromISR(SockServ->queue_handle, SockServ, NULL)) {
 				// sock_data[
+
+
 			}
 			Index = 0;
 			return;
@@ -534,7 +536,7 @@ sint32_t ParseCIFSR(uint8_t * buf, uint32_t buf_size, uint8_t * addr_buf, uint32
 sint32_t TryDispatch(uint32_t sockfd, uint32_t msg_type, uint8_t * msg, uint32_t msg_size)
 {
 	static BC_SocketData * SockServ = NULL;
-	SockServ = GetSockData(SOCK_SERV_FD);
+	SockServ = GetSockDataIrq(SOCK_SERV_FD);
 	if(!SockServ) {
 		WifiRecvFlag |= WIFI_MSG_FLAG_INVALID_SOCK_SERV;
 		return;

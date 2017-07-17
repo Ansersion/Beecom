@@ -678,7 +678,7 @@ sint32_t BC_Listen(sint32_t sockfd, sint32_t backlog)
 sint32_t BC_Accept(sint32_t sockfd, BC_Sockaddr * cliaddr, uint32_t * addrlen)
 {
 	BC_SocketData sock_data_tmp;
-	BC_SocketData * SockServ = NULL;
+	const BC_SocketData * SockServ = NULL;
 	uint32_t fail_count = 0;
 	uint32_t wifi_id = 0;
 	BC_QueueElement qe;
@@ -785,7 +785,7 @@ sint32_t BC_Close(sint32_t sockfd)
 	BC_QueueElement qe;
 	stWifiMsgUnit WifiMsgUnit;
 	BC_SocketData sock_data_tmp;
-	BC_SocketData * SockServ = NULL;
+	const BC_SocketData * SockServ = NULL;
 
 	if(!ASSERT_SOCK_VALID(sockfd)) {
 		return -1;
@@ -834,7 +834,7 @@ sint32_t BC_Close(sint32_t sockfd)
 sint32_t BC_Recv(sint32_t sockfd, void * buff, uint32_t nbytes, sint32_t flags)
 {
 	BC_SocketData sock_data_tmp;
-	BC_SocketData * SockServ = NULL;
+	const BC_SocketData * SockServ = NULL;
 
 	if(!ASSERT_SOCK_VALID(sockfd)) {
 		return -1;
@@ -1001,9 +1001,9 @@ sint32_t CheckServAddr(uint8_t * addr)
 	}
 	// assume min addr len: 1.1.1.1
 	// strlen("1.1.1.1") == 7
-	if(GetWifiServerInfo() != WIFI_SERVER_OPEN) {
-		return -3;
-	}
+	// if(GetWifiServerInfo() != WIFI_SERVER_OPEN) {
+	// 	return -3;
+	// }
 	if(strlen(addr) < 7) {
 		return -2;
 	}
