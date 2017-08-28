@@ -3,10 +3,10 @@ include ../../gnu/rules
 BC_SRC_DIR=..
 ARCH_LIB_DIR=../../STM32F10xFWLib
 
-TARGET:=libdatahub.a
+TARGET:=libwifi.a
 
 # current module directory
-DATAHUB_DIR:=./inc
+WIFI_DIR:=./inc
 
 # other modules' directory
 PUBLIC_DIR:=$(BC_SRC_DIR)/other/public
@@ -15,7 +15,7 @@ IRQ_DIR:=$(BC_SRC_DIR)/other/irq
 CONFIG_DIR:=$(BC_SRC_DIR)/other/config
 FREERTOS_DIR:=$(BC_SRC_DIR)/freertos_src/include
 
-INCLUDE += -I$(DATAHUB_DIR)
+INCLUDE += -I$(WIFI_DIR)
 
 INCLUDE += -I$(PUBLIC_DIR)
 INCLUDE += -I$(STMLIB_DIR)
