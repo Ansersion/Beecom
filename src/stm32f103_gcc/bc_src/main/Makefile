@@ -7,6 +7,7 @@ TARGET:=libdatahub.a
 
 # current module directory
 MAIN_DIR:=./inc
+MAIN_SRC:=./src
 
 # other modules' directory
 DATAHUB_DIR:=$(BC_SRC_DIR)/datahub/inc
@@ -47,8 +48,8 @@ C_OBJ 	:=
 A_OBJ 	:=
 OBJ 	:=
 
-C_SRC 	+= ${wildcard src/*.c}
-A_SRC 	+= ${wildcard src/*.s}
+C_SRC 	+= ${wildcard $(MAIN_SRC)/*.c}
+A_SRC 	+= ${wildcard $(MAIN_SRC)/*.s}
 SRC 	+= $(C_SRC)
 SRC 	+= $(A_SRC)
 

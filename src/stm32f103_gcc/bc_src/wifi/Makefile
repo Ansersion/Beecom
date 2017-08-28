@@ -7,6 +7,7 @@ TARGET:=libwifi.a
 
 # current module directory
 WIFI_DIR:=./inc
+WIFI_SRC:=./src
 
 # other modules' directory
 PUBLIC_DIR:=$(BC_SRC_DIR)/other/public
@@ -35,8 +36,8 @@ C_OBJ 	:=
 A_OBJ 	:=
 OBJ 	:=
 
-C_SRC 	+= ${wildcard src/*.c}
-A_SRC 	+= ${wildcard src/*.s}
+C_SRC 	+= ${wildcard $(WIFI_SRC)/*.c}
+A_SRC 	+= ${wildcard $(WIFI_SRC)/*.s}
 SRC 	+= $(C_SRC)
 SRC 	+= $(A_SRC)
 
