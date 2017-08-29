@@ -1,20 +1,16 @@
-/******************** (C) COPYRIGHT 2007 STMicroelectronics ********************
+/******************** (C) COPYRIGHT 2008 STMicroelectronics ********************
 * File Name          : stm32f10x_type.h
 * Author             : MCD Application Team
-* Date First Issued  : 09/29/2006
+* Version            : V2.0.1
+* Date               : 06/13/2008
 * Description        : This file contains all the common data types used for the
 *                      STM32F10x firmware library.
 ********************************************************************************
-* History:
-* 04/02/2007: V0.2
-* 02/05/2007: V0.1
-* 09/29/2006: V0.01
-********************************************************************************
-* THE PRESENT SOFTWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+* THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
 * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE TIME.
 * AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY DIRECT,
 * INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING FROM THE
-* CONTENT OF SUCH SOFTWARE AND/OR THE USE MADE BY CUSTOMERS OF THE CODING
+* CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE CODING
 * INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
 *******************************************************************************/
 
@@ -28,9 +24,17 @@ typedef signed long  s32;
 typedef signed short s16;
 typedef signed char  s8;
 
+typedef signed long  const sc32;  /* Read Only */
+typedef signed short const sc16;  /* Read Only */
+typedef signed char  const sc8;   /* Read Only */
+
 typedef volatile signed long  vs32;
 typedef volatile signed short vs16;
 typedef volatile signed char  vs8;
+
+typedef volatile signed long  const vsc32;  /* Read Only */
+typedef volatile signed short const vsc16;  /* Read Only */
+typedef volatile signed char  const vsc8;   /* Read Only */
 
 typedef unsigned long  u32;
 typedef unsigned short u16;
@@ -53,7 +57,7 @@ typedef enum {FALSE = 0, TRUE = !FALSE} bool;
 typedef enum {RESET = 0, SET = !RESET} FlagStatus, ITStatus;
 
 typedef enum {DISABLE = 0, ENABLE = !DISABLE} FunctionalState;
-#define IS_FUNCTIONAL_STATE(STATE) ((STATE == DISABLE) || (STATE == ENABLE))
+#define IS_FUNCTIONAL_STATE(STATE) (((STATE) == DISABLE) || ((STATE) == ENABLE))
 
 typedef enum {ERROR = 0, SUCCESS = !ERROR} ErrorStatus;
 
@@ -65,7 +69,7 @@ typedef enum {ERROR = 0, SUCCESS = !ERROR} ErrorStatus;
 #define S16_MIN    ((s16)-32768)
 #define U32_MAX    ((u32)4294967295uL)
 #define S32_MAX    ((s32)2147483647)
-#define S32_MIN    ((s32)2147483648uL)
+#define S32_MIN    ((s32)-2147483648)
 
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
@@ -73,4 +77,4 @@ typedef enum {ERROR = 0, SUCCESS = !ERROR} ErrorStatus;
 
 #endif /* __STM32F10x_TYPE_H */
 
-/******************* (C) COPYRIGHT 2007 STMicroelectronics *****END OF FILE****/
+/******************* (C) COPYRIGHT 2008 STMicroelectronics *****END OF FILE****/

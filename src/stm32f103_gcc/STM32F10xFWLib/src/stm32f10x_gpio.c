@@ -1,19 +1,15 @@
-/******************** (C) COPYRIGHT 2007 STMicroelectronics ********************
+/******************** (C) COPYRIGHT 2008 STMicroelectronics ********************
 * File Name          : stm32f10x_gpio.c
 * Author             : MCD Application Team
-* Date First Issued  : 09/29/2006
+* Version            : V2.0.1
+* Date               : 06/13/2008
 * Description        : This file provides all the GPIO firmware functions.
 ********************************************************************************
-* History:
-* 04/02/2007: V0.2
-* 02/05/2007: V0.1
-* 09/29/2006: V0.01
-********************************************************************************
-* THE PRESENT SOFTWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+* THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
 * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE TIME.
 * AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY DIRECT,
 * INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING FROM THE
-* CONTENT OF SUCH SOFTWARE AND/OR THE USE MADE BY CUSTOMERS OF THE CODING
+* CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE CODING
 * INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
 *******************************************************************************/
 
@@ -35,7 +31,7 @@
 #define EVCR_PORTPINCONFIG_MASK     ((u16)0xFF80)
 #define LSB_MASK                    ((u16)0xFFFF)
 #define DBGAFR_POSITION_MASK        ((u32)0x000F0000)
-#define DBGAFR_SWJCFG_MASK          ((u32)0xF8FFFFFF)
+#define DBGAFR_SWJCFG_MASK          ((u32)0xF0FFFFFF)
 #define DBGAFR_LOCATION_MASK        ((u32)0x00200000)
 #define DBGAFR_NUMBITS_MASK         ((u32)0x00100000)
 
@@ -48,12 +44,15 @@
 * Function Name  : GPIO_DeInit
 * Description    : Deinitializes the GPIOx peripheral registers to their default
 *                  reset values.
-* Input          : - GPIOx: where x can be (A..E) to select the GPIO peripheral.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
 * Output         : None
 * Return         : None
 *******************************************************************************/
 void GPIO_DeInit(GPIO_TypeDef* GPIOx)
 {
+  /* Check the parameters */
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+  
   switch (*(u32*)&GPIOx)
   {
     case GPIOA_BASE:
@@ -79,7 +78,17 @@ void GPIO_DeInit(GPIO_TypeDef* GPIOx)
     case GPIOE_BASE:
       RCC_APB2PeriphResetCmd(RCC_APB2Periph_GPIOE, ENABLE);
       RCC_APB2PeriphResetCmd(RCC_APB2Periph_GPIOE, DISABLE);
-      break;            
+      break; 
+
+    case GPIOF_BASE:
+      RCC_APB2PeriphResetCmd(RCC_APB2Periph_GPIOF, ENABLE);
+      RCC_APB2PeriphResetCmd(RCC_APB2Periph_GPIOF, DISABLE);
+      break;
+
+    case GPIOG_BASE:
+      RCC_APB2PeriphResetCmd(RCC_APB2Periph_GPIOG, ENABLE);
+      RCC_APB2PeriphResetCmd(RCC_APB2Periph_GPIOG, DISABLE);
+      break;                       
 
     default:
       break;
@@ -105,7 +114,7 @@ void GPIO_AFIODeInit(void)
 * Function Name  : GPIO_Init
 * Description    : Initializes the GPIOx peripheral according to the specified
 *                  parameters in the GPIO_InitStruct.
-* Input          : - GPIOx: where x can be (A..E) to select the GPIO peripheral.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
 *                  - GPIO_InitStruct: pointer to a GPIO_InitTypeDef structure that
 *                    contains the configuration information for the specified GPIO
 *                    peripheral.
@@ -118,8 +127,9 @@ void GPIO_Init(GPIO_TypeDef* GPIOx, GPIO_InitTypeDef* GPIO_InitStruct)
   u32 tmpreg = 0x00, pinmask = 0x00;
 
   /* Check the parameters */
-  assert(IS_GPIO_MODE(GPIO_InitStruct->GPIO_Mode));
-  assert(IS_GPIO_PIN(GPIO_InitStruct->GPIO_Pin));  
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+  assert_param(IS_GPIO_MODE(GPIO_InitStruct->GPIO_Mode));
+  assert_param(IS_GPIO_PIN(GPIO_InitStruct->GPIO_Pin));  
   
 /*---------------------------- GPIO Mode Configuration -----------------------*/
   currentmode = ((u32)GPIO_InitStruct->GPIO_Mode) & ((u32)0x0F);
@@ -127,7 +137,7 @@ void GPIO_Init(GPIO_TypeDef* GPIOx, GPIO_InitTypeDef* GPIO_InitStruct)
   if ((((u32)GPIO_InitStruct->GPIO_Mode) & ((u32)0x10)) != 0x00)
   { 
     /* Check the parameters */
-    assert(IS_GPIO_SPEED(GPIO_InitStruct->GPIO_Speed));
+    assert_param(IS_GPIO_SPEED(GPIO_InitStruct->GPIO_Speed));
     /* Output mode */
     currentmode |= (u32)GPIO_InitStruct->GPIO_Speed;
   }
@@ -167,7 +177,6 @@ void GPIO_Init(GPIO_TypeDef* GPIOx, GPIO_InitTypeDef* GPIO_InitStruct)
       }
     }
     GPIOx->CRL = tmpreg;
-    tmpreg = 0;
   }
 
 /*---------------------------- GPIO CRH Configuration ------------------------*/
@@ -225,7 +234,7 @@ void GPIO_StructInit(GPIO_InitTypeDef* GPIO_InitStruct)
 /*******************************************************************************
 * Function Name  : GPIO_ReadInputDataBit
 * Description    : Reads the specified input port pin.
-* Input          : - GPIOx: where x can be (A..E) to select the GPIO peripheral.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
 *                : - GPIO_Pin:  specifies the port bit to read.
 *                    This parameter can be GPIO_Pin_x where x can be (0..15).
 * Output         : None
@@ -236,7 +245,8 @@ u8 GPIO_ReadInputDataBit(GPIO_TypeDef* GPIOx, u16 GPIO_Pin)
   u8 bitstatus = 0x00;
   
   /* Check the parameters */
-  assert(IS_GPIO_PIN(GPIO_Pin)); 
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+  assert_param(IS_GET_GPIO_PIN(GPIO_Pin)); 
   
   if ((GPIOx->IDR & GPIO_Pin) != (u32)Bit_RESET)
   {
@@ -252,19 +262,22 @@ u8 GPIO_ReadInputDataBit(GPIO_TypeDef* GPIOx, u16 GPIO_Pin)
 /*******************************************************************************
 * Function Name  : GPIO_ReadInputData
 * Description    : Reads the specified GPIO input data port.
-* Input          : - GPIOx: where x can be (A..E) to select the GPIO peripheral.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
 * Output         : None
 * Return         : GPIO input data port value.
 *******************************************************************************/
 u16 GPIO_ReadInputData(GPIO_TypeDef* GPIOx)
 {
+  /* Check the parameters */
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+  
   return ((u16)GPIOx->IDR);
 }
 
 /*******************************************************************************
 * Function Name  : GPIO_ReadOutputDataBit
 * Description    : Reads the specified output data port bit.
-* Input          : - GPIOx: where x can be (A..E) to select the GPIO peripheral.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
 *                : - GPIO_Pin:  specifies the port bit to read.
 *                    This parameter can be GPIO_Pin_x where x can be (0..15).
 * Output         : None
@@ -275,7 +288,8 @@ u8 GPIO_ReadOutputDataBit(GPIO_TypeDef* GPIOx, u16 GPIO_Pin)
   u8 bitstatus = 0x00;
 
   /* Check the parameters */
-  assert(IS_GPIO_PIN(GPIO_Pin)); 
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+  assert_param(IS_GET_GPIO_PIN(GPIO_Pin)); 
   
   if ((GPIOx->ODR & GPIO_Pin) != (u32)Bit_RESET)
   {
@@ -291,21 +305,62 @@ u8 GPIO_ReadOutputDataBit(GPIO_TypeDef* GPIOx, u16 GPIO_Pin)
 /*******************************************************************************
 * Function Name  : GPIO_ReadOutputData
 * Description    : Reads the specified GPIO output data port.
-* Input          : - GPIOx: where x can be (A..E) to select the GPIO peripheral.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
 * Output         : None
 * Return         : GPIO output data port value.
 *******************************************************************************/
 u16 GPIO_ReadOutputData(GPIO_TypeDef* GPIOx)
 {
+  /* Check the parameters */
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+    
   return ((u16)GPIOx->ODR);
+}
+
+/*******************************************************************************
+* Function Name  : GPIO_SetBits
+* Description    : Sets the selected data port bits.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
+*                  - GPIO_Pin: specifies the port bits to be written.
+*                    This parameter can be any combination of GPIO_Pin_x where 
+*                    x can be (0..15).
+* Output         : None
+* Return         : None
+*******************************************************************************/
+void GPIO_SetBits(GPIO_TypeDef* GPIOx, u16 GPIO_Pin)
+{
+  /* Check the parameters */
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+  assert_param(IS_GPIO_PIN(GPIO_Pin));
+  
+  GPIOx->BSRR = GPIO_Pin;
+}
+
+/*******************************************************************************
+* Function Name  : GPIO_ResetBits
+* Description    : Clears the selected data port bits.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
+*                  - GPIO_Pin: specifies the port bits to be written.
+*                    This parameter can be any combination of GPIO_Pin_x where 
+*                    x can be (0..15).
+* Output         : None
+* Return         : None
+*******************************************************************************/
+void GPIO_ResetBits(GPIO_TypeDef* GPIOx, u16 GPIO_Pin)
+{
+  /* Check the parameters */
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+  assert_param(IS_GPIO_PIN(GPIO_Pin));
+  
+  GPIOx->BRR = GPIO_Pin;
 }
 
 /*******************************************************************************
 * Function Name  : GPIO_WriteBit
 * Description    : Sets or clears the selected data port bit.
-* Input          : - GPIOx: where x can be (A..E) to select the GPIO peripheral.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
 *                  - GPIO_Pin: specifies the port bit to be written.
-*                    This parameter can be GPIO_Pin_x where x can be (0..15).
+*                    This parameter can be one of GPIO_Pin_x where x can be (0..15).
 *                  - BitVal: specifies the value to be written to the selected bit.
 *                    This parameter can be one of the BitAction enum values:
 *                       - Bit_RESET: to clear the port pin
@@ -316,8 +371,9 @@ u16 GPIO_ReadOutputData(GPIO_TypeDef* GPIOx)
 void GPIO_WriteBit(GPIO_TypeDef* GPIOx, u16 GPIO_Pin, BitAction BitVal)
 {
   /* Check the parameters */
-  assert(IS_GPIO_PIN(GPIO_Pin));
-  assert(IS_GPIO_BIT_ACTION(BitVal)); 
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+  assert_param(IS_GET_GPIO_PIN(GPIO_Pin));
+  assert_param(IS_GPIO_BIT_ACTION(BitVal)); 
   
   if (BitVal != Bit_RESET)
   {
@@ -332,7 +388,7 @@ void GPIO_WriteBit(GPIO_TypeDef* GPIOx, u16 GPIO_Pin, BitAction BitVal)
 /*******************************************************************************
 * Function Name  : GPIO_Write
 * Description    : Writes data to the specified GPIO data port.
-* Input          : - GPIOx: where x can be (A..E) to select the GPIO peripheral.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
 *                  - PortVal: specifies the value to be written to the port output
 *                    data register.
 * Output         : None
@@ -340,15 +396,19 @@ void GPIO_WriteBit(GPIO_TypeDef* GPIOx, u16 GPIO_Pin, BitAction BitVal)
 *******************************************************************************/
 void GPIO_Write(GPIO_TypeDef* GPIOx, u16 PortVal)
 {
+  /* Check the parameters */
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+  
   GPIOx->ODR = PortVal;
 }
 
 /*******************************************************************************
 * Function Name  : GPIO_PinLockConfig
 * Description    : Locks GPIO Pins configuration registers.
-* Input          : - GPIOx: where x can be (A..E) to select the GPIO peripheral.
+* Input          : - GPIOx: where x can be (A..G) to select the GPIO peripheral.
 *                  - GPIO_Pin: specifies the port bit to be written.
-*                    This parameter can be GPIO_Pin_x where x can be (0..15).
+*                    This parameter can be any combination of GPIO_Pin_x where 
+*                    x can be (0..15).
 * Output         : None
 * Return         : None
 *******************************************************************************/
@@ -357,7 +417,8 @@ void GPIO_PinLockConfig(GPIO_TypeDef* GPIOx, u16 GPIO_Pin)
   u32 tmp = 0x00010000;
   
   /* Check the parameters */
-  assert(IS_GPIO_PIN(GPIO_Pin));
+  assert_param(IS_GPIO_ALL_PERIPH(GPIOx));
+  assert_param(IS_GPIO_PIN(GPIO_Pin));
   
   tmp |= GPIO_Pin;
   /* Set LCKK bit */
@@ -389,8 +450,8 @@ void GPIO_EventOutputConfig(u8 GPIO_PortSource, u8 GPIO_PinSource)
   u32 tmpreg = 0x00;
 
   /* Check the parameters */
-  assert(IS_GPIO_PORT_SOURCE(GPIO_PortSource));
-  assert(IS_GPIO_PIN_SOURCE(GPIO_PinSource));
+  assert_param(IS_GPIO_EVENTOUT_PORT_SOURCE(GPIO_PortSource));
+  assert_param(IS_GPIO_PIN_SOURCE(GPIO_PinSource));
     
   tmpreg = AFIO->EVCR;
   /* Clear the PORT[6:4] and PIN[3:0] bits */
@@ -412,7 +473,7 @@ void GPIO_EventOutputConfig(u8 GPIO_PortSource, u8 GPIO_PinSource)
 void GPIO_EventOutputCmd(FunctionalState NewState)
 {
   /* Check the parameters */
-  assert(IS_FUNCTIONAL_STATE(NewState));
+  assert_param(IS_FUNCTIONAL_STATE(NewState));
   
   *(vu32 *) EVCR_EVOE_BB = (u32)NewState;
 }
@@ -439,6 +500,11 @@ void GPIO_EventOutputCmd(FunctionalState NewState)
 *                       - GPIO_Remap1_CAN
 *                       - GPIO_Remap2_CAN
 *                       - GPIO_Remap_PD01
+*                       - GPIO_Remap_TIM5CH4_LSI
+*                       - GPIO_Remap_ADC1_ETRGINJ
+*                       - GPIO_Remap_ADC1_ETRGREG
+*                       - GPIO_Remap_ADC2_ETRGINJ
+*                       - GPIO_Remap_ADC2_ETRGREG
 *                       - GPIO_Remap_SWJ_NoJTRST
 *                       - GPIO_Remap_SWJ_JTAGDisable
 *                       - GPIO_Remap_SWJ_Disable
@@ -452,39 +518,36 @@ void GPIO_PinRemapConfig(u32 GPIO_Remap, FunctionalState NewState)
   u32 tmp = 0x00, tmp1 = 0x00, tmpreg = 0x00, tmpmask = 0x00;
 
   /* Check the parameters */
-  assert(IS_GPIO_REMAP(GPIO_Remap));
-  assert(IS_FUNCTIONAL_STATE(NewState));  
+  assert_param(IS_GPIO_REMAP(GPIO_Remap));
+  assert_param(IS_FUNCTIONAL_STATE(NewState));  
   
   tmpreg = AFIO->MAPR;
 
   tmpmask = (GPIO_Remap & DBGAFR_POSITION_MASK) >> 0x10;
   tmp = GPIO_Remap & LSB_MASK;
 
-  if ((GPIO_Remap & DBGAFR_LOCATION_MASK) == DBGAFR_LOCATION_MASK)
+  if ((GPIO_Remap & (DBGAFR_LOCATION_MASK | DBGAFR_NUMBITS_MASK)) == (DBGAFR_LOCATION_MASK | DBGAFR_NUMBITS_MASK))
   {
     tmpreg &= DBGAFR_SWJCFG_MASK;
+    AFIO->MAPR &= DBGAFR_SWJCFG_MASK;
   }
   else if ((GPIO_Remap & DBGAFR_NUMBITS_MASK) == DBGAFR_NUMBITS_MASK)
   {
     tmp1 = ((u32)0x03) << tmpmask;
     tmpreg &= ~tmp1;
+    tmpreg |= ~DBGAFR_SWJCFG_MASK;
   }
   else
   {
-    tmpreg &= ~tmp;
+    tmpreg &= ~(tmp << ((GPIO_Remap >> 0x15)*0x10));
+    tmpreg |= ~DBGAFR_SWJCFG_MASK;
   }
 
   if (NewState != DISABLE)
   {
-    if ((GPIO_Remap & DBGAFR_LOCATION_MASK) == DBGAFR_LOCATION_MASK)
-    {
-      tmpreg |= (tmp << 0x10);
-    }
-    else
-    {
-      tmpreg |= tmp;
-    }
+    tmpreg |= (tmp << ((GPIO_Remap >> 0x15)*0x10));
   }
+
   AFIO->MAPR = tmpreg;
 }
 
@@ -493,6 +556,8 @@ void GPIO_PinRemapConfig(u32 GPIO_Remap, FunctionalState NewState)
 * Description    : Selects the GPIO pin used as EXTI Line.
 * Input          : - GPIO_PortSource: selects the GPIO port to be used as
 *                    source for EXTI lines.
+*                    This parameter can be GPIO_PortSourceGPIOx where x can be
+*                    (A..G).
 *                  - GPIO_PinSource: specifies the EXTI line to be configured.
 *                   This parameter can be GPIO_PinSourcex where x can be (0..15).
 * Output         : None
@@ -503,8 +568,8 @@ void GPIO_EXTILineConfig(u8 GPIO_PortSource, u8 GPIO_PinSource)
   u32 tmp = 0x00;
 
   /* Check the parameters */
-  assert(IS_GPIO_PORT_SOURCE(GPIO_PortSource));
-  assert(IS_GPIO_PIN_SOURCE(GPIO_PinSource));
+  assert_param(IS_GPIO_EXTI_PORT_SOURCE(GPIO_PortSource));
+  assert_param(IS_GPIO_PIN_SOURCE(GPIO_PinSource));
   
   tmp = ((u32)0x0F) << (0x04 * (GPIO_PinSource & (u8)0x03));
 
@@ -512,4 +577,4 @@ void GPIO_EXTILineConfig(u8 GPIO_PortSource, u8 GPIO_PinSource)
   AFIO->EXTICR[GPIO_PinSource >> 0x02] |= (((u32)GPIO_PortSource) << (0x04 * (GPIO_PinSource & (u8)0x03)));
 }
 
-/******************* (C) COPYRIGHT 2007 STMicroelectronics *****END OF FILE****/
+/******************* (C) COPYRIGHT 2008 STMicroelectronics *****END OF FILE****/

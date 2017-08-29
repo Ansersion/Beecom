@@ -1,20 +1,16 @@
-/******************** (C) COPYRIGHT 2007 STMicroelectronics ********************
+/******************** (C) COPYRIGHT 2008 STMicroelectronics ********************
 * File Name          : stm32f10x_can.h
 * Author             : MCD Application Team
-* Date First Issued  : 09/29/2006
+* Version            : V2.0.1
+* Date               : 06/13/2008
 * Description        : This file contains all the functions prototypes for the
 *                      CAN firmware library.
 ********************************************************************************
-* History:
-* 04/02/2007: V0.2
-* 02/05/2007: V0.1
-* 09/29/2006: V0.01
-********************************************************************************
-* THE PRESENT SOFTWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+* THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
 * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE TIME.
 * AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY DIRECT,
 * INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING FROM THE
-* CONTENT OF SUCH SOFTWARE AND/OR THE USE MADE BY CUSTOMERS OF THE CODING
+* CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE CODING
 * INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
 *******************************************************************************/
 
@@ -39,7 +35,6 @@ typedef struct
   u8 CAN_SJW;
   u8 CAN_BS1;
   u8 CAN_BS2;
-  u8 CAN_Clock;
   u16 CAN_Prescaler;
 } CAN_InitTypeDef;
 
@@ -92,17 +87,17 @@ typedef struct
 #define CAN_Mode_Silent             ((u8)0x02)  /* silent mode */
 #define CAN_Mode_Silent_LoopBack    ((u8)0x03)  /* loopback combined with silent mode */
 
-#define IS_CAN_MODE(MODE) ((MODE == CAN_Mode_Normal) || (MODE == CAN_Mode_LoopBack)|| \
-                           (MODE == CAN_Mode_Silent) || (MODE == CAN_Mode_Silent_LoopBack))
+#define IS_CAN_MODE(MODE) (((MODE) == CAN_Mode_Normal) || ((MODE) == CAN_Mode_LoopBack)|| \
+                           ((MODE) == CAN_Mode_Silent) || ((MODE) == CAN_Mode_Silent_LoopBack))
 
 /* CAN synchronisation jump width */
-#define CAN_SJW_0tq                 ((u8)0x00)  /* 0 time quantum */
-#define CAN_SJW_1tq                 ((u8)0x01)  /* 1 time quantum */
-#define CAN_SJW_2tq                 ((u8)0x02)  /* 2 time quantum */
-#define CAN_SJW_3tq                 ((u8)0x03)  /* 3 time quantum */
+#define CAN_SJW_1tq                 ((u8)0x00)  /* 1 time quantum */
+#define CAN_SJW_2tq                 ((u8)0x01)  /* 2 time quantum */
+#define CAN_SJW_3tq                 ((u8)0x02)  /* 3 time quantum */
+#define CAN_SJW_4tq                 ((u8)0x03)  /* 4 time quantum */
 
-#define IS_CAN_SJW(SJW) ((SJW == CAN_SJW_0tq) || (SJW == CAN_SJW_1tq)|| \
-                         (SJW == CAN_SJW_2tq) || (SJW == CAN_SJW_3tq))
+#define IS_CAN_SJW(SJW) (((SJW) == CAN_SJW_1tq) || ((SJW) == CAN_SJW_2tq)|| \
+                         ((SJW) == CAN_SJW_3tq) || ((SJW) == CAN_SJW_4tq))
 
 /* time quantum in bit segment 1 */
 #define CAN_BS1_1tq                 ((u8)0x00)  /* 1 time quantum */
@@ -122,7 +117,7 @@ typedef struct
 #define CAN_BS1_15tq                ((u8)0x0E)  /* 15 time quantum */
 #define CAN_BS1_16tq                ((u8)0x0F)  /* 16 time quantum */
 
-#define IS_CAN_BS1(BS1) (BS1 <= CAN_BS1_16tq)
+#define IS_CAN_BS1(BS1) ((BS1) <= CAN_BS1_16tq)
 
 /* time quantum in bit segment 2 */
 #define CAN_BS2_1tq                 ((u8)0x00)  /* 1 time quantum */
@@ -134,58 +129,52 @@ typedef struct
 #define CAN_BS2_7tq                 ((u8)0x06)  /* 7 time quantum */
 #define CAN_BS2_8tq                 ((u8)0x07)  /* 8 time quantum */
 
-#define IS_CAN_BS2(BS2) (BS2 <= CAN_BS2_8tq)
-
-/* CAN clock selected */
-#define CAN_Clock_8MHz              ((u8)0x00)  /* 8MHz XTAL clock selected */
-#define CAN_Clock_APB               ((u8)0x01)  /* APB clock selected */
-
-#define IS_CAN_CLOCK(CLOCK) ((CLOCK == CAN_Clock_8MHz) || (CLOCK == CAN_Clock_APB))
+#define IS_CAN_BS2(BS2) ((BS2) <= CAN_BS2_8tq)
 
 /* CAN clock prescaler */
-#define IS_CAN_PRESCALER(PRESCALER) ((PRESCALER >= 1) && (PRESCALER <= 1024))
+#define IS_CAN_PRESCALER(PRESCALER) (((PRESCALER) >= 1) && ((PRESCALER) <= 1024))
 
 /* CAN filter number */
-#define IS_CAN_FILTER_NUMBER(NUMBER) (NUMBER <= 13)
+#define IS_CAN_FILTER_NUMBER(NUMBER) ((NUMBER) <= 13)
 
 /* CAN filter mode */
 #define CAN_FilterMode_IdMask       ((u8)0x00)  /* id/mask mode */
 #define CAN_FilterMode_IdList       ((u8)0x01)  /* identifier list mode */
 
-#define IS_CAN_FILTER_MODE(MODE) ((MODE == CAN_FilterMode_IdMask) || \
-                                       (MODE == CAN_FilterMode_IdList))
+#define IS_CAN_FILTER_MODE(MODE) (((MODE) == CAN_FilterMode_IdMask) || \
+                                  ((MODE) == CAN_FilterMode_IdList))
 
 /* CAN filter scale */
 #define CAN_FilterScale_16bit       ((u8)0x00) /* 16-bit filter scale */
 #define CAN_FilterScale_32bit       ((u8)0x01) /* 2-bit filter scale */
 
-#define IS_CAN_FILTER_SCALE(SCALE) ((SCALE == CAN_FilterScale_16bit) || \
-                                         (SCALE == CAN_FilterScale_32bit))
+#define IS_CAN_FILTER_SCALE(SCALE) (((SCALE) == CAN_FilterScale_16bit) || \
+                                    ((SCALE) == CAN_FilterScale_32bit))
 
 /* CAN filter FIFO assignation */
 #define CAN_FilterFIFO0             ((u8)0x00)  /* Filter FIFO 0 assignment for filter x */
 #define CAN_FilterFIFO1             ((u8)0x01)  /* Filter FIFO 1 assignment for filter x */
 
-#define IS_CAN_FILTER_FIFO(FIFO) ((FIFO == CAN_FilterFIFO0) || \
-                                       (FIFO == CAN_FilterFIFO1))
+#define IS_CAN_FILTER_FIFO(FIFO) (((FIFO) == CAN_FilterFIFO0) || \
+                                  ((FIFO) == CAN_FilterFIFO1))
 
 /* CAN Tx */
-#define IS_CAN_TRANSMITMAILBOX(TRANSMITMAILBOX) (TRANSMITMAILBOX <= ((u8)0x02))
-#define IS_CAN_STDID(STDID)   (STDID <= ((u32)0x7FF))
-#define IS_CAN_EXTID(EXTID)   (EXTID <= ((u32)0x3FFFF))
-#define IS_CAN_DLC(DLC)       (DLC <= ((u8)0x08))
+#define IS_CAN_TRANSMITMAILBOX(TRANSMITMAILBOX) ((TRANSMITMAILBOX) <= ((u8)0x02))
+#define IS_CAN_STDID(STDID)   ((STDID) <= ((u32)0x7FF))
+#define IS_CAN_EXTID(EXTID)   ((EXTID) <= ((u32)0x1FFFFFFF))
+#define IS_CAN_DLC(DLC)       ((DLC) <= ((u8)0x08))
 
 /* CAN identifier type */
 #define CAN_ID_STD                 ((u32)0x00000000)  /* Standard Id */
 #define CAN_ID_EXT                 ((u32)0x00000004)  /* Extended Id */
 
-#define IS_CAN_IDTYPE(IDTYPE) ((IDTYPE == CAN_ID_STD) || (IDTYPE == CAN_ID_EXT))
+#define IS_CAN_IDTYPE(IDTYPE) (((IDTYPE) == CAN_ID_STD) || ((IDTYPE) == CAN_ID_EXT))
 
 /* CAN remote transmission request */
 #define CAN_RTR_DATA                ((u32)0x00000000)  /* Data frame */
 #define CAN_RTR_REMOTE              ((u32)0x00000002)  /* Remote frame */
 
-#define IS_CAN_RTR(RTR) ((RTR == CAN_RTR_DATA) || (RTR == CAN_RTR_REMOTE))
+#define IS_CAN_RTR(RTR) (((RTR) == CAN_RTR_DATA) || ((RTR) == CAN_RTR_REMOTE))
 
 /* CAN transmit constants */
 #define CANTXFAILED                 ((u8)0x00) /* CAN transmission failed */
@@ -197,7 +186,7 @@ typedef struct
 #define CAN_FIFO0                 ((u8)0x00) /* CAN FIFO0 used to receive */
 #define CAN_FIFO1                 ((u8)0x01) /* CAN FIFO1 used to receive */
 
-#define IS_CAN_FIFO(FIFO) ((FIFO == CAN_FIFO0) || (FIFO == CAN_FIFO1))
+#define IS_CAN_FIFO(FIFO) (((FIFO) == CAN_FIFO0) || ((FIFO) == CAN_FIFO1))
 
 /* CAN sleep constants */
 #define CANSLEEPFAILED              ((u8)0x00) /* CAN did not enter the sleep mode */
@@ -212,13 +201,13 @@ typedef struct
 #define CAN_FLAG_EPV                ((u32)0x00000002) /* Error Passive Flag */
 #define CAN_FLAG_BOF                ((u32)0x00000004) /* Bus-Off Flag */
 
-#define IS_CAN_FLAG(FLAG) ((FLAG == CAN_FLAG_EWG) || (FLAG == CAN_FLAG_EPV) ||\
-                           (FLAG == CAN_FLAG_BOF))
+#define IS_CAN_FLAG(FLAG) (((FLAG) == CAN_FLAG_EWG) || ((FLAG) == CAN_FLAG_EPV) ||\
+                           ((FLAG) == CAN_FLAG_BOF))
 
 /* CAN interrupts */
-#define CAN_IT_RQCP0                ((u8)0x05) /* Request completed mailbox 0 */
-#define CAN_IT_RQCP1                ((u8)0x06) /* Request completed mailbox 1 */
-#define CAN_IT_RQCP2                ((u8)0x07) /* Request completed mailbox 2 */
+#define CAN_IT_RQCP0                ((u32)0x00000005) /* Request completed mailbox 0 */
+#define CAN_IT_RQCP1                ((u32)0x00000006) /* Request completed mailbox 1 */
+#define CAN_IT_RQCP2                ((u32)0x00000007) /* Request completed mailbox 2 */
 #define CAN_IT_TME                  ((u32)0x00000001) /* Transmit mailbox empty */
 #define CAN_IT_FMP0                 ((u32)0x00000002) /* FIFO 0 message pending */
 #define CAN_IT_FF0                  ((u32)0x00000004) /* FIFO 0 full */
@@ -234,15 +223,20 @@ typedef struct
 #define CAN_IT_WKU                  ((u32)0x00010000) /* Wake-up */
 #define CAN_IT_SLK                  ((u32)0x00020000) /* Sleep */
 
-#define IS_CAN_IT(IT) ((IT == CAN_IT_RQCP0) || (IT == CAN_IT_RQCP1) ||\
-                       (IT == CAN_IT_RQCP2) || (IT == CAN_IT_TME)   ||\
-                       (IT == CAN_IT_FMP0)  || (IT == CAN_IT_FF0)   ||\
-                       (IT == CAN_IT_FOV0)  || (IT == CAN_IT_FMP1)  ||\
-                       (IT == CAN_IT_FF1)   || (IT == CAN_IT_FOV1)  ||\
-                       (IT == CAN_IT_EWG)   || (IT == CAN_IT_EPV)   ||\
-                       (IT == CAN_IT_BOF)   || (IT == CAN_IT_LEC)   ||\
-                       (IT == CAN_IT_ERR)   || (IT == CAN_IT_WKU)   ||\
-                       (IT == CAN_IT_SLK))
+#define IS_CAN_ITConfig(IT) (((IT) == CAN_IT_TME)   || ((IT) == CAN_IT_FMP0)  ||\
+                             ((IT) == CAN_IT_FF0)   || ((IT) == CAN_IT_FOV0)  ||\
+                             ((IT) == CAN_IT_FMP1)  || ((IT) == CAN_IT_FF1)   ||\
+                             ((IT) == CAN_IT_FOV1)  || ((IT) == CAN_IT_EWG)   ||\
+                             ((IT) == CAN_IT_EPV)   || ((IT) == CAN_IT_BOF)   ||\
+                             ((IT) == CAN_IT_LEC)   || ((IT) == CAN_IT_ERR)   ||\
+                             ((IT) == CAN_IT_WKU)   || ((IT) == CAN_IT_SLK))
+
+#define IS_CAN_ITStatus(IT) (((IT) == CAN_IT_RQCP0)  || ((IT) == CAN_IT_RQCP1)  ||\
+                             ((IT) == CAN_IT_RQCP2)  || ((IT) == CAN_IT_FF0)    ||\
+                             ((IT) == CAN_IT_FOV0)   || ((IT) == CAN_IT_FF1)    ||\
+                             ((IT) == CAN_IT_FOV1)   || ((IT) == CAN_IT_EWG)    ||\
+                             ((IT) == CAN_IT_EPV)    || ((IT) == CAN_IT_BOF)    ||\
+                             ((IT) == CAN_IT_WKU)    || ((IT) == CAN_IT_SLK))
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported function protypes ----------------------------------------------- */
@@ -252,7 +246,7 @@ void CAN_FilterInit(CAN_FilterInitTypeDef* CAN_FilterInitStruct);
 void CAN_StructInit(CAN_InitTypeDef* CAN_InitStruct);
 void CAN_ITConfig(u32 CAN_IT, FunctionalState NewState);
 u8 CAN_Transmit(CanTxMsg* TxMessage);
-u32 CAN_TransmitStatus(u8 TransmitMailbox);
+u8 CAN_TransmitStatus(u8 TransmitMailbox);
 void CAN_CancelTransmit(u8 Mailbox);
 void CAN_FIFORelease(u8 FIFONumber);
 u8 CAN_MessagePending(u8 FIFONumber);
@@ -266,4 +260,4 @@ void CAN_ClearITPendingBit(u32 CAN_IT);
 
 #endif /* __STM32F10x_CAN_H */
 
-/******************* (C) COPYRIGHT 2007 STMicroelectronics *****END OF FILE****/
+/******************* (C) COPYRIGHT 2008 STMicroelectronics *****END OF FILE****/
