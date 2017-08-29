@@ -7,9 +7,11 @@ LD:=$(PREFIX)-ld
 OBJCOPY:=$(PREFIX)-objcopy
 OBJDUMP:=$(PREFIX)-objdump
 
+CFLAGS 	:= -Wall -c -mcpu=cortex-m3 -mthumb -nostartfiles
+
 INCLUDE:=
 MACRO:=
 
-MACRO += -DRVDS_ARMCM3_LM3S102
+MACRO += -DGCC_ARMCM3
 MACRO += -DportFORCE_INLINE=inline
 

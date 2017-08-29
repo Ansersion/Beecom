@@ -24,9 +24,7 @@ INCLUDE += -I$(IRQ_DIR)
 INCLUDE += -I$(CONFIG_DIR)
 INCLUDE += -I$(FREERTOS_DIR)
 
-CFLAGS 	:=
-
-CFLAGS 	+=-g -T $(BC_SRC_DIR)/gnu/sct.ld -Wall -c -mcpu=cortex-m3 -mthumb -nostartfiles $(INCLUDE) $(MACRO)
+CFLAGS 	+= $(INCLUDE) $(MACRO)
 
 C_SRC 	:=
 A_SRC 	:=
@@ -50,7 +48,6 @@ ALL: $(TARGET)
 
 $(TARGET): $(OBJ)
 	ar rcs $(TARGET) $(OBJ)
-	cscope -Rbq
 
 $(A_OBJ):%.o:%.s
 	$(AS) -mcpu=cortex-m3 -mthumb $< -o $@

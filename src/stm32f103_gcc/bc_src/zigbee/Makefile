@@ -3,11 +3,11 @@ include ../../gnu/rules
 BC_SRC_DIR=..
 ARCH_LIB_DIR=../../STM32F10xFWLib
 
-TARGET:=libwifi.a
+TARGET:=libzigbee.a
 
 # current module directory
-WIFI_DIR:=./inc
-WIFI_SRC:=./src
+ZIGBEE_DIR:=./inc
+ZIGBEE_SRC:=./src
 
 # other modules' directory
 PUBLIC_DIR:=$(BC_SRC_DIR)/other/public
@@ -16,7 +16,7 @@ IRQ_DIR:=$(BC_SRC_DIR)/other/irq
 CONFIG_DIR:=$(BC_SRC_DIR)/other/config
 FREERTOS_DIR:=$(BC_SRC_DIR)/freertos_src/include
 
-INCLUDE += -I$(WIFI_DIR)
+INCLUDE += -I$(ZIGBEE_DIR)
 
 INCLUDE += -I$(PUBLIC_DIR)
 INCLUDE += -I$(STMLIB_DIR)
@@ -34,8 +34,8 @@ C_OBJ 	:=
 A_OBJ 	:=
 OBJ 	:=
 
-C_SRC 	+= ${wildcard $(WIFI_SRC)/*.c}
-A_SRC 	+= ${wildcard $(WIFI_SRC)/*.s}
+C_SRC 	+= ${wildcard $(ZIGBEE_SRC)/*.c}
+A_SRC 	+= ${wildcard $(ZIGBEE_SRC)/*.s}
 SRC 	+= $(C_SRC)
 SRC 	+= $(A_SRC)
 

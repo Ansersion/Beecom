@@ -3,11 +3,12 @@ include ../../gnu/rules
 BC_SRC_DIR=..
 ARCH_LIB_DIR=../../STM32F10xFWLib
 
-TARGET:=libwifi.a
+TARGET:=libfreertos.a
 
 # current module directory
-WIFI_DIR:=./inc
-WIFI_SRC:=./src
+FREERTOS_DIR:=./include
+FREERTOS_PORT_DIR:=./portable/GCC/ARM_CM3
+FREERTOS_SRC:=.
 
 # other modules' directory
 PUBLIC_DIR:=$(BC_SRC_DIR)/other/public
@@ -16,7 +17,8 @@ IRQ_DIR:=$(BC_SRC_DIR)/other/irq
 CONFIG_DIR:=$(BC_SRC_DIR)/other/config
 FREERTOS_DIR:=$(BC_SRC_DIR)/freertos_src/include
 
-INCLUDE += -I$(WIFI_DIR)
+INCLUDE += -I$(FREERTOS_DIR)
+INCLUDE += -I$(FREERTOS_PORT_DIR)
 
 INCLUDE += -I$(PUBLIC_DIR)
 INCLUDE += -I$(STMLIB_DIR)
@@ -34,8 +36,13 @@ C_OBJ 	:=
 A_OBJ 	:=
 OBJ 	:=
 
-C_SRC 	+= ${wildcard $(WIFI_SRC)/*.c}
-A_SRC 	+= ${wildcard $(WIFI_SRC)/*.s}
+C_SRC 	+= ${wildcard $(FREERTOS_SRC)/*.c}
+
+# port source
+C_SRC 	+= portable/GCC/ARM_CM3/port.c
+C_SRC 	+= portable/MemMang/heap_2.c
+
+A_SRC 	+= ${wildcard $(FREERTOS_SRC)/*.s}
 SRC 	+= $(C_SRC)
 SRC 	+= $(A_SRC)
 
