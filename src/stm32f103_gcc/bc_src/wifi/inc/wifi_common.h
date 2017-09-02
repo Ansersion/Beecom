@@ -142,27 +142,8 @@ extern BC_SocketData sock_data[];
 
 #define SOCK_SERV_FD 	BC_MAX_SOCKET_NUM
 
-BC_INLINE const BC_SocketData * GetSockData(sint32_t sockfd)
-{
-	if(sockfd >= 0 && sockfd < BC_MAX_SOCKET_NUM) {
-		return &sock_data[sockfd];
-	}
-	if(SOCK_SERV_FD == sockfd) {
-		return &sock_serv;
-	}
-	return NULL;
-}
-
-BC_INLINE BC_SocketData * GetSockDataIrq(sint32_t sockfd)
-{
-	if(sockfd >= 0 && sockfd < BC_MAX_SOCKET_NUM) {
-		return &sock_data[sockfd];
-	}
-	if(SOCK_SERV_FD == sockfd) {
-		return &sock_serv;
-	}
-	return NULL;
-}
+const BC_SocketData * GetSockData(sint32_t sockfd);
+BC_SocketData * GetSockDataIrq(sint32_t sockfd);
 
 #endif
 

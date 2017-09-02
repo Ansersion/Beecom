@@ -159,7 +159,33 @@ sint32_t uputn(USART_TypeDef * usart, sint8_t * str, uint32_t size)
 	return 0;
 }
 
-#if 1
+#ifdef __GNUC__
+int _write (int fd, char *pBuffer, int size)  
+{  
+    // for (int i = 0; i < size; i++)  
+    // {  
+    //     while (!(USART2->SR & USART_SR_TXE))  
+    //     {  
+    //     }  
+    //     USART_SendData(USART2, pBuffer[i]);  
+    // }  
+    // return size;  
+    return 0;
+}  
+int _read (int fd, char *pBuffer, int size)  
+{  
+    // for (int i = 0; i < size; i++)  
+    // {  
+    //     while ((USART2->SR & USART_SR_RXNE) == 0)  
+    //     {  
+    //     }  
+
+    //     pBuffer[i] = USART_ReceiveData(USART2);  
+    // }  
+    // return size;  
+    return 0;
+}  
+#else
 #pragma import(__use_no_semihosting)             
 struct __FILE 
 { 
@@ -181,7 +207,6 @@ int fputc(int ch, FILE *f)
 	USART_SEND(USART1, ch);
 	return ch;
 }
-
 #endif
 
 sint32_t _BC_Printf(const sint8_t * file_name, uint32_t line, uint32_t mod_id, const sint8_t * fmt, ...)

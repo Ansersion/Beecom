@@ -3,38 +3,26 @@ include ../../gnu/rules
 BC_SRC_DIR=..
 ARCH_LIB_DIR=../../STM32F10xFWLib
 
-TARGET:=libmain.a
+TARGET:=libbluetooth.a
 
 # current module directory
-MAIN_DIR:=./inc
-MAIN_SRC:=./src
+BLUETOOTH_DIR:=./inc
+BLUETOOTH_SRC:=./src
 
 # other modules' directory
-DATAHUB_DIR:=$(BC_SRC_DIR)/datahub/inc
 PUBLIC_DIR:=$(BC_SRC_DIR)/other/public
 STMLIB_DIR:=$(ARCH_LIB_DIR)/inc
 IRQ_DIR:=$(BC_SRC_DIR)/other/irq
 CONFIG_DIR:=$(BC_SRC_DIR)/other/config
 FREERTOS_DIR:=$(BC_SRC_DIR)/freertos_src/include
-WIFI_DIR:=$(BC_SRC_DIR)/wifi/inc
-APP_AGENT_DIR:=$(BC_SRC_DIR)/phone_app/inc
-ZIGBEE_DIR:=$(BC_SRC_DIR)/zigbee/inc
-BLUETOOTH_DIR:=$(BC_SRC_DIR)/bluetooth/inc
-NET_SERVER_DIR:=$(BC_SRC_DIR)/net_server/inc
 
-INCLUDE += -I$(MAIN_DIR)
+INCLUDE += -I$(BLUETOOTH_DIR)
 
-INCLUDE += -I$(DATAHUB_DIR)
 INCLUDE += -I$(PUBLIC_DIR)
 INCLUDE += -I$(STMLIB_DIR)
 INCLUDE += -I$(IRQ_DIR)
 INCLUDE += -I$(CONFIG_DIR)
 INCLUDE += -I$(FREERTOS_DIR)
-INCLUDE += -I$(WIFI_DIR)
-INCLUDE += -I$(APP_AGENT_DIR)
-INCLUDE += -I$(ZIGBEE_DIR)
-INCLUDE += -I$(BLUETOOTH_DIR)
-INCLUDE += -I$(NET_SERVER_DIR)
 
 CFLAGS 	+= $(INCLUDE) $(MACRO)
 
@@ -46,8 +34,8 @@ C_OBJ 	:=
 A_OBJ 	:=
 OBJ 	:=
 
-C_SRC 	+= ${wildcard $(MAIN_SRC)/*.c}
-A_SRC 	+= ${wildcard $(MAIN_SRC)/*.s}
+C_SRC 	+= ${wildcard $(BLUETOOTH_SRC)/*.c}
+A_SRC 	+= ${wildcard $(BLUETOOTH_SRC)/*.s}
 SRC 	+= $(C_SRC)
 SRC 	+= $(A_SRC)
 

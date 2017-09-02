@@ -1,39 +1,63 @@
-/*MEMORY*/
-/*{*/
-	/* ROM 是可读的(r)和可执行的(x) */ 
-	/*rom (rx) : ORIGIN = 0, LENGTH = 0x40000*/
-	/* RAM 是可读的(r),可写的(w),可执行的(x) */ 
-	/* ram (rwx) : ORIGIN = 0x20000000, LENGTH = 0x10000 */
-/*(}*/
-/* SECTIONS 命令 : 定义各输入段到输出段的映射 */
+/* MEMORY */
+/* { */
+/*         FLASH_ON_CHIP   (rx)    : ORIGIN = 0x08000000, LENGTH = 256K */
+/*         SRAM_ON_CHIP    (rwx)   : ORIGIN = 0x20000000, LENGTH = 48K */
+/* } */
 SECTIONS
 {
-	/* . = 0x0; */
-	. = 0x20000000;
-	/* 从 0x00000000 开始 */
-	. = ALIGN(4);
+    /*flash start address: 0x08000000*/
+    . = 0x08000000;
+
+    /* code */
+    /* __code_start_flash__ = .; */
+
+    .vector : {
+        STM32F10x_Startup.o(.vector);
+        STM32F10x_Startup.o(.init);
+    }
+
 	.text : {
-		startup.o(.text) /* .text of wan-kernel.o must be smaller than 0x00000200 bytes*/
-		/* . = ALIGN(4); */
-		/* . = 0x00000200; */
-		/* irq_a.o(.text) */
-		*(.text) /* 程序代码 */
+		*(.text);
 	}
-	. = ALIGN(4);
+    . = ALIGN(4);
+    __code_end_flash__ = .;
+
+    /* rodata */
+    __rodata_start_flash__ = .;
 	.rodata : {
-		*(.rodata)
+		*(.rodata);
 	}
-	. = ALIGN(4);
-	/* . = 0x20000000; */
-	/* 从 0x20000000 开始 */
-	.data : {
-		*(.data)
-		/* 数据存储器 */
+    . = ALIGN(4);
+    __rodata_end_flash__ = .;
+
+    /* data */
+    __data_start_flash__ = .;
+
+    /* sram start address: 0x20000000 */
+    . = 0x20000000;
+
+    /* data */
+    __data_start__ = .;
+	.data : AT(__data_start_flash__){
+		*(.data);
 	}
-	. = ALIGN(4);
-	.bss : {
-		*(.bss)
-		/* 预留的数据存储器,必须初始化为零 */
-	}
+    __data_end__ = .;
+    __data_size__ = __data_end__ - __data_start__;
+
+    /* bss */
+    __bss_start__ = .;
+    .bss :
+    {
+        *(.bss);
+        *(COMMON);
+    }
+    . = ALIGN(4);
+    __bss_end__ = .;
+    __bss_size__ = __bss_end__ - __bss_start__;
+
+    /* SP */
+    __stack_end__ = 0x20000000 + __data_size__ + __bss_size__;
+
+    end = __stack_end__;
 }
 

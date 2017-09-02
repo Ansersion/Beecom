@@ -43,13 +43,6 @@
   .align 0
   .global _vectors
 
-.macro DEFAULT_ISR_HANDLER name=
-  .thumb_func
-  .weak \name
-\name:
-1: b 1b /* endless loop */
-.endm
-
 _vectors:
   .word __stack_end__
 #ifdef STARTUP_FROM_RESET
@@ -132,6 +125,14 @@ _vectors:
   .word DMA2_Channel3_IRQHandler
   .word DMA2_Channel4_5_IRQHandler
 
+
+.macro DEFAULT_ISR_HANDLER name=
+  .thumb_func
+  .weak \name
+\name:
+1: b 1b /* endless loop */
+.endm
+
   .section .init, "ax"
   .thumb_func
 
@@ -143,7 +144,7 @@ _vectors:
   ldr r1, =_vectors
   str r1, [r0]
 #endif
-  b _start
+  bl main
 
 DEFAULT_ISR_HANDLER NMIException
 DEFAULT_ISR_HANDLER HardFaultException 

@@ -6,8 +6,9 @@ CC:=$(PREFIX)-gcc
 LD:=$(PREFIX)-ld
 OBJCOPY:=$(PREFIX)-objcopy
 OBJDUMP:=$(PREFIX)-objdump
+STRIP:=$(PREFIX)-strip
 
-CFLAGS 	:= -Wall -c -mcpu=cortex-m3 -mthumb -nostartfiles
+CFLAGS 	:= -Wall -c -mcpu=cortex-m3 -mthumb -nostartfiles -nostdlib
 
 INCLUDE:=
 MACRO:=
